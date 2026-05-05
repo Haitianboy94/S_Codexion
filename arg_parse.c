@@ -6,7 +6,7 @@
 /*   By: rulouis <rulouis@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/04 15:35:46 by rulouis           #+#    #+#             */
-/*   Updated: 2026/05/05 09:40:48 by rulouis          ###   ########.fr       */
+/*   Updated: 2026/05/05 16:19:48 by rulouis          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 
 int	parse_args(int argc, char **argv, t_args *out)
 {
+	
 	// Returns 0 on success, -1 on invalid input.
     // Validates: all positive integers, scheduler == "fifo"|"edf"
 	
