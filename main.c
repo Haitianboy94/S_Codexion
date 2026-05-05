@@ -6,8 +6,13 @@
 /*   By: rulouis <rulouis@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/04 15:35:35 by rulouis           #+#    #+#             */
-/*   Updated: 2026/05/04 15:40:27 by rulouis          ###   ########.fr       */
+/*   Updated: 2026/05/05 09:55:22 by rulouis          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "codexion.h"
+
+int     main(int argc, char **argv)
+{
+	// parse_args → sim_init → sim_run → sim_destroy → exit
+}

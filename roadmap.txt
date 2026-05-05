@@ -1,0 +1,190 @@
+codexion.h — shared types & declarations
+c/* ─── types ─────────────────────────────────────────────── */
+
+typedef enum    e_sched     { FIFO, EDF }           t_sched;
+typedef enum    e_state     { THINKING, COMPILING,
+                               DEBUGGING, REFACTORING,
+                               BURNED_OUT }         t_state;
+
+typedef struct  s_args {
+    int         nb_coders;
+    long        time_to_burnout;    /* ms */
+    long        time_to_compile;
+    long        time_to_debug;
+    long        time_to_refactor;
+    int         nb_compiles_required;
+    long        dongle_cooldown;    /* ms */
+    t_sched     scheduler;
+}               t_args;
+
+typedef struct  s_heap_node {
+    int         coder_id;
+    long        priority;           /* arrival_ms (FIFO) or deadline_ms (EDF) */
+}               t_hnode;
+
+typedef struct  s_heap {
+    t_hnode    *data;
+    int         size;
+    int         capacity;
+}               t_heap;
+
+typedef struct  s_dongle {
+    int             id;
+    pthread_mutex_t mutex;
+    pthread_cond_t  cond;
+    t_heap          queue;
+    long            available_at_ms;  /* cooldown end time */
+    int             held_by;          /* coder_id or -1 */
+}               t_dongle;
+
+typedef struct  s_coder {
+    int             id;
+    t_state         state;
+    long            last_compile_start_ms;
+    int             compile_count;
+    pthread_t       thread;
+    struct s_sim   *sim;             /* back-pointer */
+}               t_coder;
+
+typedef struct  s_sim {
+    t_args          args;
+    t_coder        *coders;
+    t_dongle       *dongles;         /* nb_coders dongles */
+    pthread_t       monitor;
+    pthread_mutex_t log_mutex;
+    pthread_mutex_t state_mutex;     /* protects stop_flag & counts */
+    int             stop_flag;
+    long            start_ms;
+}               t_sim;
+
+args.c
+cint     parse_args(int argc, char **argv, t_args *out);
+    // Returns 0 on success, -1 on invalid input.
+    // Validates: all positive integers, scheduler == "fifo"|"edf"
+
+int     validate_args(const t_args *a);
+    // Secondary check — returns 0 if consistent, -1 otherwise
+
+utils.c
+clong    now_ms(void);
+    // Returns current wall-clock time in milliseconds (gettimeofday wrapper)
+
+long    elapsed_ms(long since_ms);
+    // Returns now_ms() - since_ms
+
+void    sleep_ms(long ms);
+    // Wraps usleep(); clamps to 0 if ms <= 0
+
+heap.c
+cint     heap_init(t_heap *h, int capacity);
+    // Allocates h->data; returns 0 or -1
+
+void    heap_free(t_heap *h);
+
+int     heap_push(t_heap *h, t_hnode node);
+    // Min-heap insert by node.priority; returns 0 or -1
+
+t_hnode heap_pop(t_heap *h);
+    // Removes & returns minimum node; UB if empty — check heap_empty first
+
+int     heap_empty(const t_heap *h);
+
+t_hnode heap_peek(const t_heap *h);
+    // Returns minimum node without removing
+
+/* internal helpers */
+static void     heap_sift_up(t_heap *h, int i);
+static void     heap_sift_down(t_heap *h, int i);
+
+scheduler.c
+clong    sched_priority(const t_sim *sim, int coder_id);
+    // FIFO → now_ms() at request time
+    // EDF  → coder->last_compile_start_ms + args.time_to_burnout
+
+int     sched_request(t_dongle *d, int coder_id, long priority);
+    // Push a request onto d->queue (caller must hold d->mutex)
+
+int     sched_next(t_dongle *d);
+    // Pop the highest-priority coder_id from queue (-1 if empty)
+
+dongle.c
+cint     dongle_init(t_dongle *d, int id);
+    // pthread_mutex_init + pthread_cond_init + heap_init
+
+void    dongle_destroy(t_dongle *d);
+
+void    dongle_take(t_dongle *d, t_coder *coder);
+    // Blocks until dongle is free, cooldown elapsed, AND coder is at
+    // the head of the scheduling queue.
+    // Uses pthread_cond_timedwait for deadline-aware waiting.
+    // Prints "X has taken a dongle" via logger.
+
+void    dongle_put(t_dongle *d, t_coder *coder);
+    // Releases dongle, records release time for cooldown,
+    // calls pthread_cond_broadcast to wake waiters.
+
+logger.c
+cvoid    log_init(t_sim *sim);
+    // Initialises sim->log_mutex
+
+void    log_destroy(t_sim *sim);
+
+void    log_event(t_sim *sim, int coder_id, const char *msg);
+    // Locks log_mutex, writes "timestamp_ms ID msg\n", unlocks.
+    // Uses write() for async-signal safety.
+
+coder.c
+cvoid   *coder_routine(void *arg);
+    // Thread entry point (cast arg → t_coder *).
+    // Loop: take left dongle → take right dongle → log compiling →
+    //        sleep compile → put dongles → log debugging →
+    //        sleep debug → log refactoring → sleep refactor → repeat.
+    // Exits when sim->stop_flag is set.
+
+static int  coder_left_dongle_id(const t_coder *c);
+    // Returns (c->id - 1 + nb) % nb   (0-indexed internally)
+
+static int  coder_right_dongle_id(const t_coder *c);
+    // Returns c->id % nb
+
+monitor.c
+cvoid   *monitor_routine(void *arg);
+    // Thread entry point (cast arg → t_sim *).
+    // Polls every ~1 ms; for each coder checks:
+    //   now_ms() - last_compile_start_ms > time_to_burnout
+    // If burnout detected: log "X burned out", set stop_flag,
+    //   pthread_cond_broadcast all dongle cvars to unblock waiters.
+
+static int  all_done(const t_sim *sim);
+    // Returns 1 if every coder->compile_count >= nb_compiles_required
+
+simulation.c
+cint     sim_init(t_sim *sim, const t_args *args);
+    // Allocates coders[] and dongles[], inits mutexes,
+    // seeds last_compile_start_ms = now_ms() for all coders.
+
+int     sim_run(t_sim *sim);
+    // pthread_create for monitor + all coder threads.
+    // pthread_join in reverse order.
+    // Returns 0 on clean stop, -1 on burnout.
+
+void    sim_destroy(t_sim *sim);
+    // Frees coders[], calls dongle_destroy on each dongle,
+    // destroys log_mutex and state_mutex.
+
+main.c
+cint     main(int argc, char **argv);
+    // parse_args → sim_init → sim_run → sim_destroy → exit
+
+Key implementation notes
+Dongle asymmetry — always acquire the lower-id dongle first to avoid deadlock
+(the classic left-right fork ordering from dining philosophers).
+The one-coder edge case is handled separately (only one dongle, no deadlock possible).
+Burnout timer reset — last_compile_start_ms must be set to now_ms()
+at the moment the coder starts compiling (after both dongles are held),
+not when they request a dongle.
+EDF tie-breaking — when two deadlines are equal,
+break by coder_id (lower wins) to keep the policy fully deterministic.
+Cooldown vs. scheduling — cooldown is checked inside
+dongle_take before honoring a scheduling grant; a coder at the head of
+the queue still waits out the cooldown with pthread_cond_timedwait.
