@@ -6,13 +6,13 @@
 /*   By: rulouis <rulouis@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/05 09:36:02 by rulouis           #+#    #+#             */
-/*   Updated: 2026/05/05 09:47:26 by rulouis          ###   ########.fr       */
+/*   Updated: 2026/05/11 12:41:22 by rulouis          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "codexion.h"
 
-int     dongle_init(t_dongle *d, int id)
+int dongle_init(t_dongle *d, int id)
 {
 	// pthread_mutex_init + pthread_cond_init + heap_init
 }

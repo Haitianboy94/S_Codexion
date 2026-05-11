@@ -6,7 +6,7 @@
 /*   By: rulouis <rulouis@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/04 12:27:53 by rulouis           #+#    #+#             */
-/*   Updated: 2026/05/05 09:33:00 by rulouis          ###   ########.fr       */
+/*   Updated: 2026/05/11 12:47:10 by rulouis          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -83,5 +83,32 @@ typedef struct  s_sim {
     int             stop_flag;
     long            start_ms;
 }	t_sim;
+
+int	parse_args(int argc, char **argv, t_args *out);
+int	validate_args(const t_args *a);
+void   *coder_routine(void *arg);
+int dongle_init(t_dongle *d, int id);
+void    dongle_destroy(t_dongle *d);
+void    dongle_take(t_dongle *d, t_coder *coder);
+void    dongle_put(t_dongle *d, t_coder *coder);
+int	heap_init(t_heap *h, int capacity);
+void    heap_free(t_heap *h);
+int	heap_push(t_heap *h, t_heapnode node);
+t_heapnode heap_pop(t_heap *h);
+t_heapnode heap_peek(const t_heap *h);
+long    now_ms(void);
+long    elapsed_ms(long since_ms);
+void    sleep_ms(long ms);
+void    log_init(t_sim *sim);
+void    log_destroy(t_sim *sim);
+void    log_event(t_sim *sim, int coder_id, const char *msg);
+void   *monitor_routine(void *arg);
+long    sched_priority(const t_sim *sim, int coder_id);
+int sched_request(t_dongle *d, int coder_id, long priority);
+int	sched_next(t_dongle *d);
+int sim_init(t_sim *sim, const t_args *args);
+int sim_run(t_sim *sim);
+void    sim_destroy(t_sim *sim);
+
 
 #endif
