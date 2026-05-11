@@ -188,3 +188,5 @@ break by coder_id (lower wins) to keep the policy fully deterministic.
 Cooldown vs. scheduling — cooldown is checked inside
 dongle_take before honoring a scheduling grant; a coder at the head of
 the queue still waits out the cooldown with pthread_cond_timedwait.
+
+https://medium.com/@ruinadd/philosophers-42-guide-the-dining-philosophers-problem-893a24bc0fe2
