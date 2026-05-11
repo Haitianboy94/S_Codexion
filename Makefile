@@ -5,6 +5,15 @@ CFLAGS = -Wall -Werror -Wextra -pthread
 NAME = codexion
 
 SRC = main.c\
+	arg_parse.c\
+	coder.c\
+	dongle.c\
+	heap.c\
+	helpers.c\
+	logger.c\
+	monitor.c\
+	scheduler.c\
+	simulator.c\
 
 OBJS = $(SRC:.c=.o)
 
