@@ -32,7 +32,14 @@ int sim_init(t_sim *sim, const t_args *args)
         return (-1);
     }
     sim -> dongles = dongles;
+    int i;
 
+    i = 0;
+    while (i < dongles)
+    {
+        dongle_init(dongles, i);
+        i++;
+    }
 }
 
 int sim_run(t_sim *sim)
