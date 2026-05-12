@@ -1,0 +1,106 @@
+gettimeofday() Wrapper — Explained Simply
+What is gettimeofday()?
+It's a C function that gives you the current time with microsecond precision. It fills a struct with two numbers:
+
+tv_sec → seconds since Jan 1, 1970
+tv_usec → microseconds (0–999999)
+
+
+Why "wrap" it?
+A wrapper is just a function you write that calls another function internally, but adds something on top — like error handling, logging, or a simpler interface.
+Think of it like this:
+
+You could call the pizza place directly (raw gettimeofday), or you could ask your assistant to call, handle if it's busy, and report back cleanly (the wrapper).
+
+
+What a wrapper does — step by step
+Step 1 — Call the real function
+Your wrapper calls gettimeofday() internally. The user of your code never calls it directly.
+Step 2 — Check for errors
+gettimeofday() can fail and return -1. Raw usage ignores this. Your wrapper checks it and handles the failure — maybe it prints an error message or exits gracefully.
+Step 3 — Return something more useful
+Instead of making the caller deal with the two-field struct, your wrapper could combine tv_sec and tv_usec into a single number (total microseconds), or return a formatted string like "14:32:05.123456".
+
+A concrete analogy
+Imagine you have a thermometer that:
+
+sometimes malfunctions (returns garbage)
+gives you temperature in Kelvin (not very human-friendly)
+
+You write a wrapper thermometer function that:
+
+Reads the raw thermometer
+Checks if the reading is valid
+Converts it to Celsius before returning
+
+The person asking for the temperature just calls your function and gets a clean, validated Celsius value. They don't know or care about Kelvin or malfunction checks.
+gettimeofday() wrapper works exactly the same way.
+
+What your wrapper should handle
+ConcernRaw gettimeofday()Your WrapperError checking❌ You must do it manually every time✅ Done once, inside the wrapperReturn formatStruct with two fieldsWhatever is convenient (e.g. one number)ReusabilityCopy-paste error checks everywhereCall one clean functionTestabilityHard to mockEasy to swap out for testing
+
+The key mental model
+Every time you'd normally write:
+
+"call gettimeofday → check if it failed → do something with the result"
+
+…you instead put that entire sequence inside one function, give it a good name, and call that from everywhere else.
+That's a wrapper. Nothing more.
+-----------------------------------------------------------------------------------------------------
+1. now_ms(void) — Current time in milliseconds
+You need to:
+
+Declare a struct timeval — this is the container gettimeofday() fills
+Call gettimeofday() — pass it your struct (by address) and NULL for the timezone
+Do the math to combine the two fields into one millisecond number:
+
+seconds × 1000  +  microseconds ÷ 1000
+Example with real numbers:
+If gettimeofday() gives you:
+
+tv_sec  = 1_000_000 seconds
+tv_usec = 500_000 microseconds (= 0.5 seconds)
+
+Then: 1_000_000 × 1000 + 500_000 ÷ 1000 = 1_000_000_500 ms ✅
+
+2. elapsed_ms(long since_ms) — Time passed since a moment
+This one is almost trivial once you have now_ms():
+
+Call now_ms() to get the current time
+Subtract since_ms (a past timestamp you recorded earlier)
+Return the difference
+
+Example usage pattern in your mind:
+start = now_ms()         → e.g. 1_000_000_000 ms
+... some work happens ...
+elapsed_ms(start)        → now_ms() - start = 342 ms
+No struct needed here. Pure arithmetic on top of now_ms().
+
+3. sleep_ms(long ms) — Sleep for N milliseconds
+usleep() takes microseconds, so you need to convert:
+milliseconds × 1000 = microseconds
+Two things to handle:
+
+The clamp — if ms <= 0, do nothing (return early). usleep() with a negative or zero value is undefined/useless.
+The conversion — multiply ms by 1000 before passing to usleep()
+
+Example:
+sleep_ms(200)  →  usleep(200 × 1000)  →  usleep(200_000)
+sleep_ms(-5)   →  do nothing (clamp)
+sleep_ms(0)    →  do nothing (clamp)
+
+How they connect together
+now_ms()          ← the foundation, wraps gettimeofday()
+    ↑
+elapsed_ms()      ← built on top of now_ms()
+
+sleep_ms()        ← independent, wraps usleep()
+A typical game loop or timer would look like:
+start = now_ms()
+do_some_work()
+if elapsed_ms(start) < 16
+    sleep_ms(16 - elapsed_ms(start))   ← cap to ~60fps
+
+Quick reference: unit conversions to keep in mind
+UnitRelation1 second= 1000 milliseconds1 millisecond= 1000 microseconds1 second= 1_000_000 microseconds
+So tv_sec → ms needs × 1000, and tv_usec → ms needs ÷ 1000.

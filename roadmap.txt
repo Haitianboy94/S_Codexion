@@ -190,17 +190,3 @@ dongle_take before honoring a scheduling grant; a coder at the head of
 the queue still waits out the cooldown with pthread_cond_timedwait.
 
 https://medium.com/@ruinadd/philosophers-42-guide-the-dining-philosophers-problem-893a24bc0fe2
-
-static int check_arg(char *argv)
-{
-	int i;
-
-	i = 0;
-	while (argv[i])
-	{
-		if (argv[i] < '0' || argv[i] > '0')
-			return 0;
-		i++;
-	}
-	return 1;
-}

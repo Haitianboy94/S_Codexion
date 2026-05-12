@@ -6,7 +6,7 @@
 /*   By: rulouis <rulouis@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/04 15:35:46 by rulouis           #+#    #+#             */
-/*   Updated: 2026/05/11 16:51:36 by rulouis          ###   ########.fr       */
+/*   Updated: 2026/05/12 09:47:30 by rulouis          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,12 +23,12 @@ static int  fill_args(char **argv, t_args *out)
 	)
         return (write(2, "Invalid Argument\n", 17), -1);
     out->nb_coders = atoi(argv[1]);
-    out->time_to_burnout = atol(argv[2]);
-    out->time_to_compile = atol(argv[3]);
-    out->time_to_debug = atol(argv[4]);
-    out->time_to_refactor = atol(argv[5]);
+    out->time_to_burnout = ft_atol(argv[2]);
+    out->time_to_compile = ft_atol(argv[3]);
+    out->time_to_debug = ft_atol(argv[4]);
+    out->time_to_refactor = ft_atol(argv[5]);
     out->nb_compiles_required = atoi(argv[6]);
-    out->dongle_cooldown = atol(argv[7]);
+    out->dongle_cooldown = ft_atol(argv[7]);
     return (0);
 }
 
@@ -38,9 +38,9 @@ int parse_args(int argc, char **argv, t_args *out)
         return (write(2, "\033[91mArgument Missing\033[0m", 25), -1);
     if (fill_args(argv, out) == -1)
         return (-1);
-    if (strcmp(argv[8], "FIFO") == 0)
+    if (ft_strcmp(argv[8], "FIFO") == 0)
         out->scheduler = FIFO;
-    else if (strcmp(argv[8], "EDF") == 0)
+    else if (ft_strcmp(argv[8], "EDF") == 0)
         out->scheduler = EDF;
     else
         return (write(2, "Choose between 'FIFO' or 'EDF'\n", 31), -1);

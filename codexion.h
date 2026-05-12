@@ -6,7 +6,7 @@
 /*   By: rulouis <rulouis@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/04 12:27:53 by rulouis           #+#    #+#             */
-/*   Updated: 2026/05/11 12:47:10 by rulouis          ###   ########.fr       */
+/*   Updated: 2026/05/12 10:49:34 by rulouis          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,7 +18,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdio.h>
-#include <time.h>
+#include <sys/time.h>
 #include <stdbool.h>
 
 typedef enum	e_sched	{
@@ -109,6 +109,8 @@ int	sched_next(t_dongle *d);
 int sim_init(t_sim *sim, const t_args *args);
 int sim_run(t_sim *sim);
 void    sim_destroy(t_sim *sim);
+int ft_strcmp(char *s1, char *s2);
+long ft_atol(char *str);
 
 
 #endif
