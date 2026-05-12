@@ -104,3 +104,98 @@ if elapsed_ms(start) < 16
 Quick reference: unit conversions to keep in mind
 UnitRelation1 second= 1000 milliseconds1 millisecond= 1000 microseconds1 second= 1_000_000 microseconds
 So tv_sec → ms needs × 1000, and tv_usec → ms needs ÷ 1000.
+--------------------------------------------------------------------------------------
+Breaking Down Each Function
+sim_init(t_sim *sim, const t_args *args)
+This is the setup function — it prepares everything before any thread runs.
+
+Step 1 — Copy the args into the sim
+sim->args = *args
+You want the sim to own its own copy of the config, not depend on the caller's pointer staying alive.
+
+Step 2 — Allocate coders[]
+You need nb_coders slots of type t_coder.
+Think of it like reserving N seats before anyone sits down. If the allocation fails → return -1 immediately.
+
+Step 3 — Allocate dongles[]
+Same idea — nb_coders dongles (one per coder, like philosophers/forks).
+If it fails → free coders[] first, then return -1. Order of cleanup matters.
+
+Step 4 — Initialize each dongle
+Loop through all dongles, call dongle_init() on each one. If any fails → you need to destroy the ones already initialized before returning.
+
+Step 5 — Initialize each coder
+Loop through all coders and set their fields:
+
+id → their index
+state → THINKING (everyone starts idle)
+compile_count → 0
+last_compile_start_ms → now_ms() ← this is the burnout clock seed
+sim → pointer back to the sim (so the thread can access shared state)
+
+
+Step 6 — Initialize the mutexes
+Two mutexes to init: log_mutex and state_mutex. If either fails → cleanup everything above and return -1.
+
+Step 7 — Seed the sim's own fields
+
+stop_flag = 0
+start_ms = now_ms()
+
+
+Mental model of sim_init:
+args copy → alloc coders → alloc dongles → init dongles
+→ init coders → init mutexes → seed timestamps → return 0
+Every step that can fail needs to clean up everything before it on failure.
+
+
+sim_run(t_sim *sim)
+This is the launch and wait function.
+
+Step 1 — Create the monitor thread
+pthread_create with monitor_routine. This thread watches for burnout / stop conditions. It should start before any coder thread.
+
+Step 2 — Create all coder threads
+Loop from 0 to nb_coders - 1, calling pthread_create for each, passing coder_routine and a pointer to that specific t_coder.
+
+Step 3 — Join in reverse order
+You join coders last-to-first, then the monitor.
+Why reverse? Convention and safety — the monitor is the one that sets stop_flag, so you want coders fully done before the monitor exits. Reverse join order ensures no thread is left dangling.
+
+Step 4 — Check stop_flag to determine return value
+
+If stop_flag signals burnout → return -1
+If clean stop (all compiles done) → return 0
+
+
+Mental model of sim_run:
+create monitor → create coders[0..n] → join coders[n..0] → join monitor → return
+
+
+sim_destroy(t_sim *sim)
+This is the cleanup function — mirror image of sim_init.
+
+Step 1 — Destroy all dongles
+Loop through dongles[] and call dongle_destroy() on each. This releases their mutexes and condition variables, and frees their heap.
+
+Step 2 — Free dongles[]
+free(sim->dongles)
+
+Step 3 — Free coders[]
+free(sim->coders)
+The coders themselves don't own heap memory (their thread is already joined), so just freeing the array is enough.
+
+Step 4 — Destroy the mutexes
+pthread_mutex_destroy on log_mutex and state_mutex.
+
+Mental model of sim_destroy:
+destroy dongles[] → free dongles → free coders → destroy mutexes
+It's exactly the reverse order of sim_init. What you built last, you tear down first.
+
+
+How all three connect
+sim_init()     ← build everything, seed state
+    ↓
+sim_run()      ← launch threads, block until done
+    ↓
+sim_destroy()  ← tear everything down

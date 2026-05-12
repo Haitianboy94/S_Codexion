@@ -3,25 +3,38 @@
 void *funct1(void *arg)
 {
 	int i;
-	for(i = 0; i <= 10; i++)
+
+	i = 0;
+	while (true)
 	{
 		printf("\033[91mthread[%d]\033[0m\n", i);
+		i++;
 		sleep(1);
+		if (i == 30)
+		{
+			printf("thread stop at [%d]\n", i);
+			return NULL;
+		}
 	}
-
 	return NULL;
 }
 
 void *funct2(void *arg)
 {
 	int i;
-	for(i = 0; i <= 10; i++)
-	{
-		printf("\033[95mCoder[%d]\033[0m\n", i);
-		sleep(1);
-	}
-		
 
+	i = 0;
+	while (true)
+	{
+		printf("\033[95mcoder[%d]\033[0mis compiling\n", i);
+		i++;
+		sleep(1);
+		if (i == 30)
+		{
+			printf("Coder[%d] has a burn out\n", i);
+			return NULL;
+		}
+	}
 	return NULL;
 }
 
