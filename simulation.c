@@ -60,19 +60,81 @@ int sim_init(t_sim *sim, const t_args *args)
         coders[j].thread = 0;
         j++;
     }
+    sim -> stop_flag = 0;
+    sim -> start_ms = now_ms();
 
+    if (pthread_mutex_init(&sim -> log_mutex, NULL) != 0)
+    {
+        i = 0;
+        while (i < args -> nb_coders)
+        {
+            dongle_destroy(&dongles[i]);
+            i++;
+        }
+        free(dongles);
+        free(coders);
+        return (-1);
+    }
+    
+    if (pthread_mutex_init(&sim -> state_mutex, NULL) != 0)
+    {
+        i = 0;
+        while (i < args -> nb_coders)
+        {
+            dongle_destroy(&dongles[i]);
+            i++;
+        }
+        free(dongles);
+        free(coders);
+        pthread_mutex_destroy(&sim->log_mutex);
+        return (-1);
+    }
     return 0;
 }
 
 int sim_run(t_sim *sim)
 {
+    int i;
+
+    i = 0;
 	// pthread_create for monitor + all coder threads.
     // pthread_join in reverse order.
     // Returns 0 on clean stop, -1 on burnout.
+    if (pthread_create(&sim -> monitor, NULL, monitor_routine, sim) != 0)
+        return (-1);
+    while (i < sim -> args.nb_coders)
+    {
+        if (pthread_create(&sim -> coders[i].thread, NULL, coder_routine, &sim -> coders[i]) != 0)
+        {
+            sim -> stop_flag = 1;
+            break;
+        }
+        i++;
+    }
+    i = sim -> args.nb_coders - 1;
+    while (i >= 0)
+    {
+        pthread_join(sim -> coders[i].thread, NULL);
+        i--;
+    }
+    pthread_join(sim -> monitor, NULL);
+    return (sim->stop_flag != 0) ? -1 : 0;
 }
 
 void    sim_destroy(t_sim *sim)
 {
 	// Frees coders[], calls dongle_destroy on each dongle,
     // destroys log_mutex and state_mutex.
+    int i;
+
+    i = 0;
+    while (i < sim -> args.nb_coders)
+    {
+        dongle_destroy(&sim -> dongles[i]);
+        i++;
+    }
+    free(sim -> dongles);
+    free(sim -> coders);
+    pthread_mutex_destroy(&sim->log_mutex);
+    pthread_mutex_destroy(&sim->state_mutex);
 }
