@@ -16,15 +16,18 @@ int sim_init(t_sim *sim, const t_args *args)
 {
 	// Allocates coders[] and dongles[], inits mutexes,
     // seeds last_compile_start_ms = now_ms() for all coders.
-    sim -> args = *args;
+    int i;
+    int j;
     t_coder *coders;
     t_dongle *dongles;
 
+    i = 0;
+    j = 0;
+    sim -> args = *args;
     coders = malloc(sizeof(t_coder) * args -> nb_coders);
     if (!coders)
         return (-1);
     sim -> coders = coders;
-    
     dongles = malloc(sizeof(t_dongle) * args -> nb_coders);
     if (!dongles)
     {
@@ -32,14 +35,33 @@ int sim_init(t_sim *sim, const t_args *args)
         return (-1);
     }
     sim -> dongles = dongles;
-    int i;
-
-    i = 0;
-    while (i < dongles)
+    while (i < args -> nb_coders)
     {
-        dongle_init(dongles, i);
+        if (dongle_init(&dongles[i], i) != 0)
+        {
+            while (i - 1 >= 0)
+            {
+                i--;
+                dongle_destroy(&dongles[i]);
+            }
+            free(dongles);
+            free(coders);
+            return -1;
+        }
         i++;
     }
+    while (j < args -> nb_coders)
+    {
+        coders[j].id = j;
+        coders[j].state = THINKING;
+        coders[j].compile_count = 0;
+        coders[j].last_compile_start_ms = now_ms();
+        coders[j].sim = sim;
+        coders[j].thread = 0;
+        j++;
+    }
+
+    return 0;
 }
 
 int sim_run(t_sim *sim)
