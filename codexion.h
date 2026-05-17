@@ -13,12 +13,14 @@
 #ifndef	CODEXION_H
 # define CODEXION_H
 
+#define _POSIX_C_SOURCE 199309L
 #include <pthread.h>
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <sys/time.h>
+#include <time.h>
 #include <stdbool.h>
 
 typedef enum	e_sched	{

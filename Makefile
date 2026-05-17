@@ -9,7 +9,7 @@ SRC = main.c\
 	coder.c\
 	dongle.c\
 	heap.c\
-	helpers.c\
+	helpers&time.c\
 	logger.c\
 	monitor.c\
 	scheduler.c\
