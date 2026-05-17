@@ -199,3 +199,188 @@ sim_init()     ← build everything, seed state
 sim_run()      ← launch threads, block until done
     ↓
 sim_destroy()  ← tear everything down
+----------------------------------------------------------------
+coder_left_dongle_id and coder_right_dongle_id
+These are the simplest, so start here — coder_routine depends on them.
+
+The dongle assignment problem
+Each coder needs two dongles to work (like philosophers needing two forks). With nb coders and nb dongles arranged in a circle:
+coder 0 → dongles 0 and 1? or nb-1 and 0?
+coder 1 → dongles 1 and 2?
+...
+The formulas handle the wraparound for the last coder using modulo %:
+Left dongle: (c->id - 1 + nb) % nb
+
+The + nb prevents negative results when id = 0
+Coder 0 → (0 - 1 + 4) % 4 = 3 (wraps to last dongle)
+Coder 1 → (1 - 1 + 4) % 4 = 0
+Coder 2 → (2 - 1 + 4) % 4 = 1
+
+Right dongle: c->id % nb
+
+Coder 0 → 0 % 4 = 0
+Coder 1 → 1 % 4 = 1
+Coder 2 → 2 % 4 = 2
+
+Both functions need nb — get it from c->sim->args.nb_coders.
+
+coder_routine
+This is the main loop each coder thread runs for its entire lifetime.
+
+Step 1 — Cast the argument
+pthread_create passes the argument as void *. Your first line must cast it back to t_coder *:
+t_coder *c = (t_coder *)arg;
+Then you can access c->sim, c->id, etc.
+
+Step 2 — The main loop condition
+The loop should keep running as long as sim->stop_flag is 0. Every iteration starts by checking it:
+while stop_flag is 0 → do work
+But be careful — stop_flag is shared across threads, so you should read it while holding state_mutex, or at minimum treat it as a soft signal to exit cleanly.
+
+Step 3 — Get dongle IDs
+At the start of each iteration (or before the loop), compute:
+left  = coder_left_dongle_id(c)
+right = coder_right_dongle_id(c)
+These give you indices into sim->dongles[].
+
+Step 4 — Take the dongles
+Call dongle_take on left first, then right:
+dongle_take(&sim->dongles[left], c)
+dongle_take(&sim->dongles[right], c)
+dongle_take blocks until the dongle is available — this is where scheduling (FIFO or EDF) happens internally.
+
+Step 5 — Check burnout before working
+After acquiring dongles, check if the coder has burned out — meaning elapsed_ms(c->last_compile_start_ms) exceeds time_to_burnout. If so, set stop_flag, put the dongles back, and exit the loop.
+
+Step 6 — Compile phase
+
+Log the event (log_event) with a "compiling" message
+Set state to COMPILING
+sleep_ms(time_to_compile)
+Increment compile_count
+Reset last_compile_start_ms = now_ms() ← resets the burnout clock
+
+
+Step 7 — Put the dongles back
+dongle_put(&sim->dongles[right], c)
+dongle_put(&sim->dongles[left], c)
+Put them back in reverse order from how you took them.
+
+Step 8 — Debug phase
+
+Log "debugging"
+Set state to DEBUGGING
+sleep_ms(time_to_debug)
+
+
+Step 9 — Refactor phase
+
+Log "refactoring"
+Set state to REFACTORING
+sleep_ms(time_to_refactor)
+
+
+Step 10 — Check compile count
+If nb_compiles_required > 0 and compile_count >= nb_compiles_required, the coder is done. Set stop_flag = 1 and break out of the loop.
+
+Step 11 — Return
+coder_routine returns void *, so return NULL at the end.
+
+The full loop in plain English
+cast arg → t_coder *c
+compute left and right dongle ids
+loop while stop_flag == 0:
+    take left dongle
+    take right dongle
+    check burnout → if burned out, put dongles back, set stop_flag, break
+    log + sleep compile
+    increment compile_count, reset burnout clock
+    put right dongle
+    put left dongle
+    log + sleep debug
+    log + sleep refactor
+    check if compile target reached → if so, set stop_flag, break
+return NULL
+
+How the three functions connect
+coder_left_dongle_id()   ← gives index into sim->dongles[]
+coder_right_dongle_id()  ← gives index into sim->dongles[]
+        ↓
+coder_routine()          ← uses both to take/put the right dongles
+--------------------------------------------------------------------
+dongle_init(t_dongle *d, int id)
+Three things to initialize, in order:
+1 — Set the id
+d->id = id
+2 — Initialize the mutex
+pthread_mutex_init(&d->mutex, NULL) — if it fails, return -1 immediately.
+3 — Initialize the condition variable
+pthread_cond_init(&d->cond, NULL) — if it fails, destroy the mutex you just created, then return -1.
+4 — Initialize the heap
+heap_init(&d->queue, capacity) — capacity should be nb_coders but you don't have that here. A safe default is a fixed size like 64, or you can pass capacity as a parameter. If it fails, destroy cond and mutex, return -1.
+5 — Seed the remaining fields
+
+d->available_at_ms = 0 ← dongle is available immediately
+d->held_by = -1 ← not held by anyone
+
+Return 0 on success.
+
+dongle_destroy(t_dongle *d)
+Mirror of init — tear down in reverse order:
+
+heap_free(&d->queue)
+pthread_cond_destroy(&d->cond)
+pthread_mutex_destroy(&d->mutex)
+
+No return value, no error checking needed.
+
+dongle_take(t_dongle *d, t_coder *coder)
+This is the most complex one. It's a blocking wait until three conditions are all true simultaneously:
+
+Dongle is not held (d->held_by == -1)
+Cooldown has elapsed (now_ms() >= d->available_at_ms)
+This coder is at the head of the scheduling queue
+
+Step 1 — Lock the mutex
+pthread_mutex_lock(&d->mutex)
+Step 2 — Add coder to the queue
+Compute this coder's priority via sched_priority(coder->sim, coder->id) and push it onto the heap:
+heap_push(&d->queue, (t_heapnode){coder->id, priority})
+Step 3 — Wait loop
+Use a while loop that checks all three conditions. While any condition is not met, call pthread_cond_timedwait with a short timeout (e.g. 1ms into the future). This lets the thread re-check periodically rather than sleeping forever.
+To use pthread_cond_timedwait you need a struct timespec set to an absolute time:
+clock_gettime(CLOCK_REALTIME, &ts)
+ts.tv_nsec += 1_000_000  (1ms)
+handle nanosecond overflow if tv_nsec >= 1_000_000_000
+Step 4 — Take the dongle
+Once the loop exits (all conditions met):
+
+d->held_by = coder->id
+Pop the coder from the queue head via sched_next(d)
+Log "X has taken a dongle"
+
+Step 5 — Unlock the mutex
+pthread_mutex_unlock(&d->mutex)
+
+dongle_put(t_dongle *d, t_coder *coder)
+Simpler than take — releasing is non-blocking.
+Step 1 — Lock the mutex
+Step 2 — Release the dongle
+
+d->held_by = -1
+d->available_at_ms = now_ms() + dongle_cooldown ← starts the cooldown timer
+
+Step 3 — Wake all waiters
+pthread_cond_broadcast(&d->cond)
+This wakes every thread waiting on this dongle's condition variable. They'll all re-check their wait loop conditions and the one at the head of the queue will proceed.
+Step 4 — Unlock the mutex
+
+How they connect
+dongle_init()    ← sets up mutex, cond, heap
+    ↓
+dongle_take()    ← locks, queues self, waits, takes
+    ↓
+dongle_put()     ← locks, releases, broadcasts, unlocks
+    ↓
+dongle_destroy() ← tears down heap, cond, mutex
+The mutex protects all shared fields (held_by, available_at_ms, queue). The condition variable is how sleeping threads get woken when something changes.
