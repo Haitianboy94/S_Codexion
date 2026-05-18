@@ -6,7 +6,7 @@
 /*   By: rulouis <rulouis@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/04 12:27:53 by rulouis           #+#    #+#             */
-/*   Updated: 2026/05/18 11:50:35 by rulouis          ###   ########.fr       */
+/*   Updated: 2026/05/18 16:20:19 by rulouis          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -115,5 +115,9 @@ int sim_run(t_sim *sim);
 void    sim_destroy(t_sim *sim);
 long ft_atol(char *str);
 char	*ft_itoa(int n);
+void     heap_sift_up(t_heap *h, int i);
+void     heap_sift_down(t_heap *h, int i);
+int     heap_empty(const t_heap *h);
+t_heapnode heap_peek(const t_heap *h);
 
 #endif

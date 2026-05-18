@@ -384,3 +384,180 @@ dongle_put()     ← locks, releases, broadcasts, unlocks
     ↓
 dongle_destroy() ← tears down heap, cond, mutex
 The mutex protects all shared fields (held_by, available_at_ms, queue). The condition variable is how sleeping threads get woken when something changes.
+----------------------------------------------------------------------------------------------
+sched_priority(const t_sim *sim, int coder_id)
+This function returns a number that represents how urgently a coder needs the dongle. Two different algorithms depending on sim->args.scheduler:
+FIFO (First In First Out):
+
+Priority = now_ms() at the moment of the request
+Earlier requests get lower numbers → served first
+Think of it as a timestamp queue — whoever asked first, goes first
+
+EDF (Earliest Deadline First):
+
+Priority = coder->last_compile_start_ms + args.time_to_burnout
+This is the absolute deadline — the moment this coder burns out
+Lower deadline = more urgent = served first
+You need to access the coder via sim->coders[coder_id]
+
+The function checks sim->args.scheduler:
+
+If FIFO → return now_ms()
+If EDF → return sim->coders[coder_id].last_compile_start_ms + sim->args.time_to_burnout
+
+
+sched_request(t_dongle *d, int coder_id, long priority)
+This is just a thin wrapper around heap_push. The caller already holds d->mutex.
+
+Build a t_heapnode with coder_id and priority
+Call heap_push(&d->queue, node)
+Return whatever heap_push returns
+
+Note: looking at your dongle_take, you already call heap_push directly there. sched_request is a cleaner abstraction over it — you could refactor dongle_take to call sched_request instead.
+
+sched_next(t_dongle *d)
+Pops the highest priority coder from the queue and returns their id.
+Two cases:
+
+If queue is empty (d->queue.size == 0) → return -1
+Otherwise → call heap_pop(&d->queue) which returns a t_heapnode, then return .coder_id from it
+
+The heap is a min-heap — smallest priority value comes out first, which means earliest timestamp (FIFO) or nearest deadline (EDF) is served next.
+
+How they connect
+sched_priority()   ← computes the number to rank by
+      ↓
+sched_request()    ← pushes (coder_id, priority) onto the heap
+      ↓
+sched_next()       ← pops the most urgent coder_id off the heap
+In dongle_take:
+
+Before waiting → sched_request (or direct heap_push)
+After conditions met → sched_next to pop self from queue
+-------------------------------------------------------------------------------------------------
+log_init(t_sim *sim)
+One line — initialize sim->log_mutex:
+pthread_mutex_init(&sim->log_mutex, NULL)
+Note: you already do this in sim_init. log_init is a convenience wrapper — it just calls the same init. No return value needed since it's void, but you could ignore the return or handle it.
+
+log_destroy(t_sim *sim)
+Mirror of init — one line:
+pthread_mutex_destroy(&sim->log_mutex)
+
+log_event(t_sim *sim, int coder_id, const char *msg)
+This is the interesting one. Three phases:
+Phase 1 — Lock
+pthread_mutex_lock(&sim->log_mutex)
+Phase 2 — Build and write the message
+You need to produce a line like:
+1234 2 is compiling
+That's: timestamp_ms, space, coder_id, space, msg, newline.
+Two things to know:
+
+You must use write() not printf — async-signal safe
+You need to convert numbers to strings manually since write() only takes raw bytes. Build a buffer with ft_itoa-style logic or use a char array with manual number-to-string conversion
+
+Steps:
+
+Get now_ms() - sim->start_ms → elapsed time since sim started
+Convert that number to a string → write it
+Write " " (space)
+Convert coder_id to a string → write it
+Write " " (space)
+Write msg directly (it's already a string) → write(1, msg, strlen(msg))
+Write "\n"
+
+Phase 3 — Unlock
+pthread_mutex_unlock(&sim->log_mutex)
+
+The number-to-string challenge
+Since you can't use printf, you need a small helper or inline logic to convert a long or int to a string. A common pattern:
+put the digits into a char buffer from right to left
+then write the buffer
+You likely already have something like ft_itoa or can write a small local helper.
+
+Mental model
+lock log_mutex
+compute elapsed = now_ms() - sim->start_ms
+write elapsed as string
+write " "
+write coder_id as string
+write " "
+write msg
+write "\n"
+unlock log_mutex
+---------------------------------------------------------------------------------------------
+The heap is a min-heap — the node with the lowest priority value is always at the top (h->data[0]).
+
+heap_init(t_heap *h, int capacity)
+You're allocating h itself — but h is already a pointer passed in by the caller. You should allocate h->data (the array of nodes), not h:
+h->data = malloc(sizeof(t_heapnode) * capacity)
+if (!h->data) → return -1
+h->size = 0
+h->capacity = capacity
+return 0
+
+heap_free(t_heap *h)
+Just free h->data — you already have this. Also set h->data = NULL and reset size and capacity to 0 for safety.
+
+heap_empty(const t_heap *h)
+One line:
+return (h->size == 0)
+
+heap_peek(const t_heap *h)
+One line — return the root node (minimum):
+return (h->data[0])
+
+heap_push(t_heap *h, t_heapnode node)
+Four steps:
+
+Check if full → h->size >= h->capacity → return -1
+Place node at end → h->data[h->size] = node
+Increment size → h->size++
+Sift up from last position → heap_sift_up(h, h->size - 1)
+Return 0
+
+
+heap_pop(t_heap *h)
+Four steps:
+
+Save the root → t_heapnode min = h->data[0]
+Move last node to root → h->data[0] = h->data[h->size - 1]
+Decrement size → h->size--
+Sift down from root → heap_sift_down(h, 0)
+Return min
+
+
+heap_sift_up(t_heap *h, int i)
+This restores heap order after a push. The new node at position i bubbles up until it's larger than its parent:
+while i > 0:
+    parent = (i - 1) / 2
+    if h->data[i].priority < h->data[parent].priority:
+        swap data[i] and data[parent]
+        i = parent
+    else:
+        break
+
+heap_sift_down(t_heap *h, int i)
+This restores heap order after a pop. The node at position i sinks down until it's smaller than both children:
+while true:
+    left  = 2 * i + 1
+    right = 2 * i + 2
+    smallest = i
+
+    if left < size AND data[left].priority < data[smallest].priority:
+        smallest = left
+    if right < size AND data[right].priority < data[smallest].priority:
+        smallest = right
+
+    if smallest == i:
+        break   ← heap order restored
+    swap data[i] and data[smallest]
+    i = smallest
+
+How they connect
+heap_init      ← allocates data array
+heap_push      → places node, sift_up restores order
+heap_peek      ← reads minimum without removing
+heap_pop       → removes minimum, sift_down restores order
+heap_free      ← releases data array
