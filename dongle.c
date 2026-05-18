@@ -6,7 +6,7 @@
 /*   By: rulouis <rulouis@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/05 09:36:02 by rulouis           #+#    #+#             */
-/*   Updated: 2026/05/18 10:24:03 by rulouis          ###   ########.fr       */
+/*   Updated: 2026/05/18 16:22:54 by rulouis          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -44,8 +44,7 @@ void    dongle_destroy(t_dongle *d)
 void    dongle_take(t_dongle *d, t_coder *coder)
 {
 	// Blocks until dongle is free, cooldown elapsed, AND coder is at
-    // the head of the scheduling queue.
-    // Uses pthread_cond_timedwait for deadline-aware waiting.
+    // the head of the scheduling queue.Uses pthread_cond_timedwait for deadline-aware waiting.
     // Prints "X has taken a dongle" via logger.
     long priority;
 
