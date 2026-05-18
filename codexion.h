@@ -6,14 +6,17 @@
 /*   By: rulouis <rulouis@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/04 12:27:53 by rulouis           #+#    #+#             */
-/*   Updated: 2026/05/18 16:20:19 by rulouis          ###   ########.fr       */
+/*   Updated: 2026/05/18 17:03:11 by rulouis          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
+
+#ifndef _POSIX_C_SOURCE
+# define _POSIX_C_SOURCE 200809L
+#endif
 
 #ifndef	CODEXION_H
 # define CODEXION_H
 
-#define _POSIX_C_SOURCE 199309L
 #include <pthread.h>
 #include <string.h>
 #include <stdlib.h>
@@ -22,8 +25,6 @@
 #include <sys/time.h>
 #include <time.h>
 #include <stdbool.h>
-
-struct timespec ts;
 
 typedef enum	e_sched	{
 	FIFO,
@@ -119,5 +120,6 @@ void     heap_sift_up(t_heap *h, int i);
 void     heap_sift_down(t_heap *h, int i);
 int     heap_empty(const t_heap *h);
 t_heapnode heap_peek(const t_heap *h);
+char	*ft_strdup(char *s);
 
 #endif

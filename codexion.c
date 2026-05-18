@@ -1,12 +1,12 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   main.c                                             :+:      :+:    :+:   */
+/*   codexion.c                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: rulouis <rulouis@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/04 15:35:35 by rulouis           #+#    #+#             */
-/*   Updated: 2026/05/12 11:17:23 by rulouis          ###   ########.fr       */
+/*   Updated: 2026/05/18 17:10:50 by rulouis          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,6 +42,29 @@ long	ft_atol(char *str)
 		i++;
 	}
 	return (nb * sign);
+}
+
+char	*ft_strdup(char *s)
+{
+	int		i;
+	int		size;
+	char	*new_s;
+
+	size = strlen(s);
+	i = 0;
+	new_s = (char *) malloc(sizeof(char) * (size + 1));
+	if (!new_s)
+		return (NULL);
+	else
+	{
+		while (i < size)
+		{
+			new_s[i] = s[i];
+			i++;
+		}
+	}
+	new_s[i] = '\0';
+	return (new_s);
 }
 
 // debugggg

@@ -13,7 +13,7 @@ SRC = codexion.c\
 	logger.c\
 	monitor.c\
 	scheduler.c\
-	simulator.c\
+	simulation.c\
 	heap_utils.c\
 
 OBJS = $(SRC:.c=.o)

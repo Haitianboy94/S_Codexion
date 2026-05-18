@@ -6,7 +6,7 @@
 /*   By: rulouis <rulouis@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/05 09:36:08 by rulouis           #+#    #+#             */
-/*   Updated: 2026/05/18 11:51:51 by rulouis          ###   ########.fr       */
+/*   Updated: 2026/05/18 17:05:41 by rulouis          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,12 +31,28 @@ long    elapsed_ms(long since_ms)
 void    sleep_ms(long ms)
 {
 	// Wraps usleep(); clamps to 0 if ms <= 0
-	long convert;
-	
-	if (ms <= 0)
-		return;
-	convert = ms * 1000;
-	usleep(convert);
+	long start;
+
+    if (ms <= 0)
+        return;
+    start = now_ms();
+    while (now_ms() - start < ms)
+    {
+		
+	}
+}
+
+static	int	lenn(int n)
+{
+	int	size;
+
+	size = (n <= 0);
+	while (n)
+	{
+		n = n / 10;
+		size++;
+	}
+	return (size);
 }
 
 char	*ft_itoa(int n)
@@ -52,7 +68,7 @@ char	*ft_itoa(int n)
 		return (ft_strdup("-2147483648"));
 	if (sign)
 		nb = -nb;
-	lenght = strlen(nb) + sign;
+	lenght = lenn(nb) + sign;
 	str = (char *)malloc(sizeof(char) * lenght + 1);
 	if (!str)
 		return (NULL);
@@ -66,27 +82,4 @@ char	*ft_itoa(int n)
 	if (sign)
 		str[0] = '-';
 	return (str);
-}
-
-static char	*ft_strdup(char *s)
-{
-	int		i;
-	int		size;
-	char	*new_s;
-
-	size = strlen(s);
-	i = 0;
-	new_s = (char *) malloc(sizeof(char) * (size + 1));
-	if (!new_s)
-		return (NULL);
-	else
-	{
-		while (i < size)
-		{
-			new_s[i] = s[i];
-			i++;
-		}
-	}
-	new_s[i] = '\0';
-	return (new_s);
 }

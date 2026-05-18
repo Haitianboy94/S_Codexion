@@ -6,12 +6,13 @@
 /*   By: rulouis <rulouis@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/05 09:36:14 by rulouis           #+#    #+#             */
-/*   Updated: 2026/05/18 11:42:23 by rulouis          ###   ########.fr       */
+/*   Updated: 2026/05/18 17:06:38 by rulouis          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "codexion.h"
 
+static int  all_done(const t_sim *sim);
 void   *monitor_routine(void *arg)
 {
 	// Thread entry point (cast arg → t_sim *).

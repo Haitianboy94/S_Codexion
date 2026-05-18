@@ -6,12 +6,14 @@
 /*   By: rulouis <rulouis@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/05 09:35:56 by rulouis           #+#    #+#             */
-/*   Updated: 2026/05/05 09:53:17 by rulouis          ###   ########.fr       */
+/*   Updated: 2026/05/18 16:25:27 by rulouis          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "codexion.h"
 
+static int  coder_left_dongle_id(const t_coder *c);
+static int  coder_right_dongle_id(const t_coder *c);
 void   *coder_routine(void *arg)
 {
 	// Thread entry point (cast arg → t_coder *).

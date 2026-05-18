@@ -6,7 +6,7 @@
 /*   By: rulouis <rulouis@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/18 16:18:00 by rulouis           #+#    #+#             */
-/*   Updated: 2026/05/18 16:20:00 by rulouis          ###   ########.fr       */
+/*   Updated: 2026/05/18 16:23:30 by rulouis          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,6 +42,7 @@ void     heap_sift_up(t_heap *h, int i)
 			break;
 	}
 }
+
 void     heap_sift_down(t_heap *h, int i)
 {
 	int left;
