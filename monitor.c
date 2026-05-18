@@ -34,7 +34,7 @@ void   *monitor_routine(void *arg)
         {
             if (elapsed_ms(new_arg->coders[i].last_compile_start_ms) > new_arg->args.time_to_burnout)
             {
-                log_event(new_arg, new_arg->coders[i].id, "burned out");
+                log_event(new_arg, new_arg->coders[i].id, BURNED "burned out 🔥" RESET);
                 new_arg->coders[i].state = BURNED_OUT;
                 new_arg->stop_flag = 1;
             }

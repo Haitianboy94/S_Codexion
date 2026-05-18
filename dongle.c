@@ -67,7 +67,7 @@ void    dongle_take(t_dongle *d, t_coder *coder)
     }
     d->held_by = coder->id;
     sched_next(d);
-    log_event(coder->sim, coder->id, "has taken a dongle");
+    log_event(coder->sim, coder->id, PURPLE "has taken a dongle" RESET);
     pthread_mutex_unlock(&d->mutex);
 }    
 

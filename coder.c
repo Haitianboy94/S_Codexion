@@ -42,7 +42,7 @@ void   *coder_routine(void *arg)
         }
         // Compile phase
         c -> state = COMPILING;
-        log_event(c->sim, c->id, "is compiling");
+        log_event(c->sim, c->id, BLUE "is compiling ⚙️🔨" RESET);
         sleep_ms(c->sim->args.time_to_compile);
         c->compile_count ++;
         c->last_compile_start_ms = now_ms();
@@ -50,15 +50,15 @@ void   *coder_routine(void *arg)
         dongle_put(&c->sim->dongles[left], c);
         // Debugging phase
         c->state = DEBUGGING;
-        log_event(c->sim, c->id, "is debugging");
+        log_event(c->sim, c->id, RED "is debugging 🔍🐞" RESET);
         sleep_ms(c->sim->args.time_to_debug);
         // Refactoring phase
         c->state = REFACTORING;
-        log_event(c->sim, c->id, "is refactoring");
+        log_event(c->sim, c->id, GREEN "is refactoring 🧹♻️" RESET);
         sleep_ms(c->sim->args.time_to_refactor);
         // Thinking process
-        c->state = THINKING;
-        log_event(c->sim, c->id, "is thinking");
+        // c->state = THINKING;
+        // log_event(c->sim, c->id, YELLOW "is thinking" RESET);
 
         if ((c->sim -> args.nb_compiles_required > 0 &&
             (c->compile_count) >= c -> sim->args.nb_compiles_required))
