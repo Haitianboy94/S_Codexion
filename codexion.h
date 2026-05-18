@@ -6,7 +6,7 @@
 /*   By: rulouis <rulouis@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/04 12:27:53 by rulouis           #+#    #+#             */
-/*   Updated: 2026/05/18 10:30:37 by rulouis          ###   ########.fr       */
+/*   Updated: 2026/05/18 11:50:35 by rulouis          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -114,5 +114,6 @@ int sim_init(t_sim *sim, const t_args *args);
 int sim_run(t_sim *sim);
 void    sim_destroy(t_sim *sim);
 long ft_atol(char *str);
+char	*ft_itoa(int n);
 
 #endif
