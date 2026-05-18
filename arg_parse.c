@@ -6,7 +6,7 @@
 /*   By: rulouis <rulouis@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/04 15:35:46 by rulouis           #+#    #+#             */
-/*   Updated: 2026/05/12 09:47:30 by rulouis          ###   ########.fr       */
+/*   Updated: 2026/05/18 10:28:10 by rulouis          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,9 +38,9 @@ int parse_args(int argc, char **argv, t_args *out)
         return (write(2, "\033[91mArgument Missing\033[0m", 25), -1);
     if (fill_args(argv, out) == -1)
         return (-1);
-    if (ft_strcmp(argv[8], "FIFO") == 0)
+    if (strcmp(argv[8], "FIFO") == 0)
         out->scheduler = FIFO;
-    else if (ft_strcmp(argv[8], "EDF") == 0)
+    else if (strcmp(argv[8], "EDF") == 0)
         out->scheduler = EDF;
     else
         return (write(2, "Choose between 'FIFO' or 'EDF'\n", 31), -1);

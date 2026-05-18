@@ -6,7 +6,7 @@
 /*   By: rulouis <rulouis@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/04 12:27:53 by rulouis           #+#    #+#             */
-/*   Updated: 2026/05/12 15:20:34 by rulouis          ###   ########.fr       */
+/*   Updated: 2026/05/18 10:30:37 by rulouis          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,6 +22,8 @@
 #include <sys/time.h>
 #include <time.h>
 #include <stdbool.h>
+
+struct timespec ts;
 
 typedef enum	e_sched	{
 	FIFO,
@@ -111,8 +113,6 @@ int	sched_next(t_dongle *d);
 int sim_init(t_sim *sim, const t_args *args);
 int sim_run(t_sim *sim);
 void    sim_destroy(t_sim *sim);
-int ft_strcmp(char *s1, char *s2);
 long ft_atol(char *str);
-
 
 #endif
