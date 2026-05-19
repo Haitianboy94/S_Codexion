@@ -6,11 +6,9 @@
 /*   By: rulouis <rulouis@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/05 09:36:14 by rulouis           #+#    #+#             */
-/*   Updated: 2026/05/19 10:12:43 by rulouis          ###   ########.fr       */
+/*   Updated: 2026/05/19 12:04:17 by rulouis          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
-
-#include "codexion.h"
 
 // static int  all_done(const t_sim *sim);
 // void   *monitor_routine(void *arg)
@@ -74,6 +72,21 @@
 //     }
 //     return(1);
 // }
+
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   monitor.c                                          :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: rulouis <rulouis@student.42.fr>            +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2026/05/05 09:36:14 by rulouis           #+#    #+#             */
+/*   Updated: 2026/05/19 00:00:00 by rulouis          ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+#include "codexion.h"
+
 static int	all_done(const t_sim *sim)
 {
 	int	i;
@@ -81,73 +94,64 @@ static int	all_done(const t_sim *sim)
 	i = 0;
 	while (i < sim->args.nb_coders)
 	{
-		if (sim->coders[i].compile_count
-			< sim->args.nb_compiles_required)
+		if (sim->coders[i].compile_count < sim->args.nb_compiles_required)
 			return (0);
 		i++;
 	}
 	return (1);
 }
 
+static void	broadcast_all(t_sim *sim)
+{
+	int	j;
+
+	j = 0;
+	while (j < sim->args.nb_coders)
+	{
+		pthread_cond_broadcast(&sim->dongles[j].cond);
+		j++;
+	}
+}
+
 void	*monitor_routine(void *arg)
 {
 	t_sim	*sim;
 	int		i;
-	int		j;
 
 	sim = (t_sim *)arg;
 	while (1)
 	{
-		sleep_ms(1); // fast polling (<10ms guarantee)
-
+		sleep_ms(1);
 		pthread_mutex_lock(&sim->state_mutex);
-
 		if (sim->stop_flag)
 		{
 			pthread_mutex_unlock(&sim->state_mutex);
-			return (NULL);
+			break ;
 		}
-
 		i = 0;
 		while (i < sim->args.nb_coders)
 		{
-			if (elapsed_ms(sim->coders[i].last_compile_start_ms)
+			if (sim->coders[i].state != COMPILING
+				&& elapsed_ms(sim->coders[i].last_compile_start_ms)
 				> sim->args.time_to_burnout)
 			{
-				log_event(sim, sim->coders[i].id, "burned out");
 				sim->coders[i].state = BURNED_OUT;
 				sim->stop_flag = 1;
-
 				pthread_mutex_unlock(&sim->state_mutex);
-
-				j = 0;
-				while (j < sim->args.nb_coders)
-				{
-					pthread_cond_broadcast(
-						&sim->dongles[j].cond);
-					j++;
-				}
+				log_event(sim, sim->coders[i].id, "burned out");
+				broadcast_all(sim);
 				return (NULL);
 			}
 			i++;
 		}
-
-		if (sim->args.nb_compiles_required > 0
-			&& all_done(sim))
+		if (sim->args.nb_compiles_required > 0 && all_done(sim))
 		{
 			sim->stop_flag = 1;
 			pthread_mutex_unlock(&sim->state_mutex);
-
-			j = 0;
-			while (j < sim->args.nb_coders)
-			{
-				pthread_cond_broadcast(
-					&sim->dongles[j].cond);
-				j++;
-			}
+			broadcast_all(sim);
 			return (NULL);
 		}
-
 		pthread_mutex_unlock(&sim->state_mutex);
 	}
+	return (NULL);
 }
