@@ -6,7 +6,7 @@
 /*   By: rulouis <rulouis@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/04 15:35:35 by rulouis           #+#    #+#             */
-/*   Updated: 2026/05/19 11:53:10 by rulouis          ###   ########.fr       */
+/*   Updated: 2026/05/19 12:21:23 by rulouis          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -68,18 +68,19 @@ char	*ft_strdup(char *s)
 }
 
 // debugggg
-int     main(int argc, char **argv)
+int	main(int argc, char **argv)
 {
-	// parse_args → sim_init → sim_run → sim_destroy → exit
-	t_args  args;
-	t_sim sim;
-	int result;
+	t_args	args;
+	t_sim	sim;
+	int		result;
 
-    if (parse_args(argc, argv, &args) == -1)
-        return (1);
-    if (sim_init(&sim, &args) != 0)
+	if (parse_args(argc, argv, &args) == -1)
 		return (1);
-    result = sim_run(&sim);
+	if (validate_args(&args) == -1)
+		return (1);
+	if (sim_init(&sim, &args) != 0)
+		return (1);
+	result = sim_run(&sim);
 	sim_destroy(&sim);
 	return (result == 0) ? 0 : 1;
 }
