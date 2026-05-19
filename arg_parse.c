@@ -6,7 +6,7 @@
 /*   By: rulouis <rulouis@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/04 15:35:46 by rulouis           #+#    #+#             */
-/*   Updated: 2026/05/18 10:28:10 by rulouis          ###   ########.fr       */
+/*   Updated: 2026/05/19 13:00:40 by rulouis          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,7 +35,7 @@ static int  fill_args(char **argv, t_args *out)
 int parse_args(int argc, char **argv, t_args *out)
 {
     if (argc != 9)
-        return (write(2, "\033[91mArgument Missing\033[0m", 25), -1);
+        return (write(2, RED "Argument Missing\033" RESET, 25), -1);
     if (fill_args(argv, out) == -1)
         return (-1);
     if (strcmp(argv[8], "fifo") == 0)
@@ -43,7 +43,7 @@ int parse_args(int argc, char **argv, t_args *out)
     else if (strcmp(argv[8], "edf") == 0)
         out->scheduler = EDF;
     else
-        return (write(2, "Choose between 'fifo' or 'edf'\n", 31), -1);
+        return (write(2, RED "Choose between 'fifo' or 'edf'\n" RESET, 39), -1);
     return (0);
 }
 	
@@ -64,18 +64,18 @@ static int check_arg(char *argv)
 int validate_args(const t_args *a)
 {
     if (a->nb_coders < 1)
-        return (write(2, "Can't simulate 0 coders\n", 24), -1);
+        return (write(2, RED "Can't simulate 0 coder\n" RESET, 29), -1);
     if (a->time_to_burnout <= 0)
-        return (write(2, "Time to burnout can't be 0\n", 27), -1);
+        return (write(2, RED "Time to burnout can't be 0\n" RESET, 35), -1);
     if (a->time_to_compile <= 0)
-        return (write(2, "Time to compile can't be 0\n", 27), -1);
+        return (write(2, RED "Time to compile can't be 0\n" RESET, 35), -1);
     if (a->time_to_debug <= 0)
-        return (write(2, "Time to debug can't be 0\n", 25), -1);
+        return (write(2, RED "Time to debug can't be 0\n" RESET, 33), -1);
     if (a->time_to_refactor <= 0)
-        return (write(2, "Time to refactor can't be 0\n", 28), -1);
+        return (write(2, RED "Time to refactor can't be 0\n" RESET, 36), -1);
     if (a->nb_compiles_required < 1)
-        return (write(2, "Need at least 1 compile\n", 24), -1);
+        return (write(2, RED "Need at least 1 compile\n" RESET, 32), -1);
     if (a->dongle_cooldown < 0)
-        return (write(2, "dongle_cooldown can't be negative\n", 34), -1);
+        return (write(2, RED "dongle_cooldown can't be negative\n" RESET, 42), -1);
     return (0);
 }
