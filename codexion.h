@@ -6,7 +6,7 @@
 /*   By: rulouis <rulouis@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/04 12:27:53 by rulouis           #+#    #+#             */
-/*   Updated: 2026/05/18 17:03:11 by rulouis          ###   ########.fr       */
+/*   Updated: 2026/05/19 13:24:32 by rulouis          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -129,5 +129,10 @@ void     heap_sift_down(t_heap *h, int i);
 int     heap_empty(const t_heap *h);
 t_heapnode heap_peek(const t_heap *h);
 char	*ft_strdup(char *s);
+int	coder_left_dongle_id(const t_coder *c);
+int	coder_right_dongle_id(const t_coder *c);
+void	dongle_put_ordered(t_coder *c, int left, int right);
+void	interruptible_sleep(t_coder *c, long ms);
+int	take_dongles(t_coder *c, int left, int right);
 
 #endif
