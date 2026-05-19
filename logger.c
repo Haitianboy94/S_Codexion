@@ -6,7 +6,7 @@
 /*   By: rulouis <rulouis@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/05 09:36:11 by rulouis           #+#    #+#             */
-/*   Updated: 2026/05/18 12:04:41 by rulouis          ###   ########.fr       */
+/*   Updated: 2026/05/19 10:17:51 by rulouis          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,23 +25,37 @@ void    log_destroy(t_sim *sim)
 
 void    log_event(t_sim *sim, int coder_id, const char *msg)
 {
-	// Locks log_mutex, writes "timestamp_ms ID msg\n", unlocks.
-    // Uses write() for async-signal safety.
-	long start_time;
-	char *strnumber;
-	char *str_coder_id;
+    long    timestamp;
+    char    *str_time;
+    char    *str_id;
 
-	pthread_mutex_lock(&sim->log_mutex);
-	start_time = now_ms() - sim->start_ms;
-	strnumber = ft_itoa(start_time);
-	str_coder_id = ft_itoa(coder_id);
-	write(2, strnumber, strlen(strnumber));
-	write(2, " ", 1);
-	write(2, str_coder_id, strlen(str_coder_id));
-	write(2, " ", 1);
-	write(2, msg, strlen(msg));
-	write(2, "\n", 1);
-	free(strnumber);
-	free(str_coder_id);
-	pthread_mutex_unlock(&sim->log_mutex);
+    pthread_mutex_lock(&sim->log_mutex);
+
+    /* ---- STOP PROTECTION ---- */
+    pthread_mutex_lock(&sim->state_mutex);
+    if (sim->stop_flag && strcmp(msg, "burned out") != 0)
+    {
+        pthread_mutex_unlock(&sim->state_mutex);
+        pthread_mutex_unlock(&sim->log_mutex);
+        return ;
+    }
+    pthread_mutex_unlock(&sim->state_mutex);
+    /* ------------------------- */
+
+    timestamp = now_ms() - sim->start_ms;
+
+    str_time = ft_itoa(timestamp);
+    str_id = ft_itoa(coder_id);
+
+    write(1, str_time, strlen(str_time));
+    write(1, " ", 1);
+    write(1, str_id, strlen(str_id));
+    write(1, " ", 1);
+    write(1, msg, strlen(msg));
+    write(1, "\n", 1);
+
+    free(str_time);
+    free(str_id);
+
+    pthread_mutex_unlock(&sim->log_mutex);
 }

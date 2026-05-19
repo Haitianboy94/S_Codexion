@@ -6,7 +6,7 @@
 /*   By: rulouis <rulouis@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/04 15:35:35 by rulouis           #+#    #+#             */
-/*   Updated: 2026/05/18 17:10:50 by rulouis          ###   ########.fr       */
+/*   Updated: 2026/05/19 09:26:44 by rulouis          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -83,14 +83,3 @@ int     main(int argc, char **argv)
 	sim_destroy(&sim);
 	return (result == 0) ? 0 : 1;
 }
-// printf("nb_coders: %d\n", args.nb_coders);
-// printf("time_to_burnout: %ld\n", args.time_to_burnout);
-// printf("time_to_compile: %ld\n", args.time_to_compile);
-// printf("time_to_debug: %ld\n", args.time_to_debug);
-// printf("time_to_refactor: %ld\n", args.time_to_refactor);
-// printf("nb_compiles_required: %d\n", args.nb_compiles_required);
-// printf("dongle_cooldown: %ld\n", args.dongle_cooldown);
-// printf("scheduler: %s\n", args.scheduler == FIFO ? "FIFO" : "EDF");
-// long res = now_ms();
-// printf("time in ms: %ld",res);
-// return (0);
