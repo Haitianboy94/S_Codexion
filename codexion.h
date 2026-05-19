@@ -102,7 +102,7 @@ int	validate_args(const t_args *a);
 void   *coder_routine(void *arg);
 int dongle_init(t_dongle *d, int id);
 void    dongle_destroy(t_dongle *d);
-void    dongle_take(t_dongle *d, t_coder *coder);
+void dongle_take(t_dongle *d, t_coder *coder, long priority);
 void    dongle_put(t_dongle *d, t_coder *coder);
 int	heap_init(t_heap *h, int capacity);
 void    heap_free(t_heap *h);

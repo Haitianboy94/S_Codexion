@@ -57,7 +57,6 @@ void   *monitor_routine(void *arg)
             }
         }
     }
-    
     return(NULL);
 }
 

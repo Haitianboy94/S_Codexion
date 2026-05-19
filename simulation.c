@@ -52,7 +52,7 @@ int sim_init(t_sim *sim, const t_args *args)
     }
     while (j < args -> nb_coders)
     {
-        coders[j].id = j;
+        coders[j].id = j + 1;
         coders[j].state = THINKING;
         coders[j].compile_count = 0;
         coders[j].last_compile_start_ms = now_ms();
@@ -94,31 +94,35 @@ int sim_init(t_sim *sim, const t_args *args)
 
 int sim_run(t_sim *sim)
 {
-    int i;
+	int i;
 
-    i = 0;
-	// pthread_create for monitor + all coder threads.
-    // pthread_join in reverse order.
-    // Returns 0 on clean stop, -1 on burnout.
-    if (pthread_create(&sim -> monitor, NULL, monitor_routine, sim) != 0)
-        return (-1);
-    while (i < sim -> args.nb_coders)
-    {
-        if (pthread_create(&sim -> coders[i].thread, NULL, coder_routine, &sim -> coders[i]) != 0)
-        {
-            sim -> stop_flag = 1;
-            break;
-        }
-        i++;
-    }
-    i = sim -> args.nb_coders - 1;
-    while (i >= 0)
-    {
-        pthread_join(sim -> coders[i].thread, NULL);
-        i--;
-    }
-    pthread_join(sim -> monitor, NULL);
-    return (sim->stop_flag != 0) ? -1 : 0;
+	i = 0;
+	if (pthread_create(&sim->monitor, NULL, monitor_routine, sim) != 0)
+		return (-1);
+	while (i < sim->args.nb_coders)
+	{
+		if (pthread_create(&sim->coders[i].thread, NULL, coder_routine, &sim->coders[i]) != 0)
+		{
+			sim->stop_flag = 1;
+			break ;
+		}
+		i++;
+	}
+	i = sim->args.nb_coders - 1;
+	while (i >= 0)
+	{
+		pthread_join(sim->coders[i].thread, NULL);
+		i--;
+	}
+	pthread_join(sim->monitor, NULL);
+	i = 0;
+	while (i < sim->args.nb_coders)
+	{
+		if (sim->coders[i].state == BURNED_OUT)
+			return (-1);
+		i++;
+	}
+	return (0);
 }
 
 void    sim_destroy(t_sim *sim)

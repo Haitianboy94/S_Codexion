@@ -41,21 +41,26 @@ void    dongle_destroy(t_dongle *d)
     pthread_mutex_destroy(&d->mutex);
 }
 
-void    dongle_take(t_dongle *d, t_coder *coder)
+void dongle_take(t_dongle *d, t_coder *coder, long priority)
 {
 	// Blocks until dongle is free, cooldown elapsed, AND coder is at
     // the head of the scheduling queue.Uses pthread_cond_timedwait for deadline-aware waiting.
     // Prints "X has taken a dongle" via logger.
-    long priority;
     struct timespec ts;
 
     pthread_mutex_lock(&d->mutex);
-    priority = sched_priority(coder->sim, coder->id);
     heap_push(&d->queue, (t_heapnode){coder->id, priority});
     while (d->held_by != -1
         || now_ms() < d->available_at_ms
         || heap_peek(&d->queue).coder_id != coder->id)
     {
+        if (coder->sim->stop_flag)
+        {
+            if (d->queue.size > 0)
+                heap_pop(&d->queue);
+            pthread_mutex_unlock(&d->mutex);
+            return ;
+        }
         clock_gettime(CLOCK_REALTIME, &ts);
         ts.tv_nsec += 1000000;
         if (ts.tv_nsec >= 1000000000)
