@@ -16,6 +16,7 @@ SRC = codexion.c\
 	simulation.c\
 	heap_utils.c\
 	coder_helper.c\
+	simulation_helper.c\
 
 OBJS = $(SRC:.c=.o)
 

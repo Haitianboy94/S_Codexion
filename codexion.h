@@ -134,5 +134,6 @@ int	coder_right_dongle_id(const t_coder *c);
 void	dongle_put_ordered(t_coder *c, int left, int right);
 void	interruptible_sleep(t_coder *c, long ms);
 int	take_dongles(t_coder *c, int left, int right);
+struct timespec	next_timeout(void);
 
 #endif

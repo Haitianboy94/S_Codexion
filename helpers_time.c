@@ -14,7 +14,6 @@
 
 long    now_ms(void)
 {
-	// Returns current wall-clock time in milliseconds (gettimeofday wrapper)
 	struct timeval tv;
 	
 	gettimeofday(&tv, NULL);
@@ -24,13 +23,11 @@ long    now_ms(void)
 
 long    elapsed_ms(long since_ms)
 {
-	// Returns now_ms() - since_ms
 	return (now_ms() - since_ms);
 }
 
 void    sleep_ms(long ms)
 {
-	// Wraps usleep(); clamps to 0 if ms <= 0
 	long start;
 
     if (ms <= 0)

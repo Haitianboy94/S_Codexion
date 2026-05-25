@@ -3,142 +3,82 @@
 /*                                                        :::      ::::::::   */
 /*   simulation.c                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rulouis <rulouis@student.42.fr>            +#+  +:+       +#+        */
+/*   By: ruthler <ruthler@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/05 09:36:21 by rulouis           #+#    #+#             */
-/*   Updated: 2026/05/12 17:15:39 by rulouis          ###   ########.fr       */
+/*   Updated: 2026/05/25 14:29:33 by ruthler          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "codexion.h"
 
-int sim_init(t_sim *sim, const t_args *args)
+static void	cleanup_dongles(t_dongle *dongles, int count)
 {
-	// Allocates coders[] and dongles[], inits mutexes,
-    // seeds last_compile_start_ms = now_ms() for all coders.
-    int i;
-    int j;
-    t_coder *coders;
-    t_dongle *dongles;
-
-    i = 0;
-    j = 0;
-    sim -> args = *args;
-    coders = malloc(sizeof(t_coder) * args -> nb_coders);
-    if (!coders)
-        return (-1);
-    sim -> coders = coders;
-    dongles = malloc(sizeof(t_dongle) * args -> nb_coders);
-    if (!dongles)
-    {
-        free(coders);
-        return (-1);
-    }
-    sim -> dongles = dongles;
-    while (i < args -> nb_coders)
-    {
-        if (dongle_init(&dongles[i], i) != 0)
-        {
-            while (i - 1 >= 0)
-            {
-                i--;
-                dongle_destroy(&dongles[i]);
-            }
-            free(dongles);
-            free(coders);
-            return -1;
-        }
-        i++;
-    }
-    while (j < args -> nb_coders)
-    {
-        coders[j].id = j + 1;
-        coders[j].state = THINKING;
-        coders[j].compile_count = 0;
-        coders[j].last_compile_start_ms = now_ms();
-        coders[j].sim = sim;
-        coders[j].thread = 0;
-        j++;
-    }
-    sim -> stop_flag = 0;
-    sim -> start_ms = now_ms();
-
-    if (pthread_mutex_init(&sim -> log_mutex, NULL) != 0)
-    {
-        i = 0;
-        while (i < args -> nb_coders)
-        {
-            dongle_destroy(&dongles[i]);
-            i++;
-        }
-        free(dongles);
-        free(coders);
-        return (-1);
-    }
-    
-    if (pthread_mutex_init(&sim -> state_mutex, NULL) != 0)
-    {
-        i = 0;
-        while (i < args -> nb_coders)
-        {
-            dongle_destroy(&dongles[i]);
-            i++;
-        }
-        free(dongles);
-        free(coders);
-        pthread_mutex_destroy(&sim->log_mutex);
-        return (-1);
-    }
-    return 0;
+	while (count-- > 0)
+		dongle_destroy(&dongles[count]);
+	free(dongles);
 }
 
-int sim_run(t_sim *sim)
+static int	init_dongles(t_sim *sim, const t_args *args)
 {
-	int i;
+	int	i;
 
 	i = 0;
-	if (pthread_create(&sim->monitor, NULL, monitor_routine, sim) != 0)
-		return (-1);
-	while (i < sim->args.nb_coders)
+	while (i < args->nb_coders)
 	{
-		if (pthread_create(&sim->coders[i].thread, NULL, coder_routine, &sim->coders[i]) != 0)
+		if (dongle_init(&sim->dongles[i], i) != 0)
 		{
-			sim->stop_flag = 1;
-			break ;
-		}
-		i++;
-	}
-	i = sim->args.nb_coders - 1;
-	while (i >= 0)
-	{
-		pthread_join(sim->coders[i].thread, NULL);
-		i--;
-	}
-	pthread_join(sim->monitor, NULL);
-	i = 0;
-	while (i < sim->args.nb_coders)
-	{
-		if (sim->coders[i].state == BURNED_OUT)
+			cleanup_dongles(sim->dongles, i);
 			return (-1);
+		}
 		i++;
 	}
 	return (0);
 }
 
-void    sim_destroy(t_sim *sim)
+static void	init_coders(t_sim *sim, const t_args *args)
 {
-	// Frees coders[], calls dongle_destroy on each dongle,
-    // destroys log_mutex and state_mutex.
-    int i;
+	int	j;
 
-    i = 0;
-    while (i < sim -> args.nb_coders)
-    {
-        dongle_destroy(&sim -> dongles[i]);
-        i++;
-    }
-    free(sim -> dongles);
-    free(sim -> coders);
-    pthread_mutex_destroy(&sim->log_mutex);
-    pthread_mutex_destroy(&sim->state_mutex);
+	j = 0;
+	while (j < args->nb_coders)
+	{
+		sim->coders[j].id = j + 1;
+		sim->coders[j].state = THINKING;
+		sim->coders[j].compile_count = 0;
+		sim->coders[j].last_compile_start_ms = now_ms();
+		sim->coders[j].sim = sim;
+		sim->coders[j].thread = 0;
+		j++;
+	}
+}
+
+static int	init_mutexes(t_sim *sim)
+{
+	if (pthread_mutex_init(&sim->log_mutex, NULL) != 0)
+		return (-1);
+	if (pthread_mutex_init(&sim->state_mutex, NULL) != 0)
+	{
+		pthread_mutex_destroy(&sim->log_mutex);
+		return (-1);
+	}
+	return (0);
+}
+
+int	sim_init(t_sim *sim, const t_args *args)
+{
+	sim->args = *args;
+	sim->coders = malloc(sizeof(t_coder) * args->nb_coders);
+	sim->dongles = malloc(sizeof(t_dongle) * args->nb_coders);
+	if (!sim->coders || !sim->dongles)
+		return (free(sim->coders), free(sim->dongles), -1);
+	if (init_dongles(sim, args) != 0)
+		return (free(sim->coders), free(sim->dongles), -1);
+	init_coders(sim, args);
+	sim->stop_flag = 0;
+	sim->start_ms = now_ms();
+	if (init_mutexes(sim) != 0)
+		return (cleanup_dongles(sim->dongles, args->nb_coders),
+			free(sim->coders), -1);
+	return (0);
 }

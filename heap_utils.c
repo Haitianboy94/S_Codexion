@@ -19,7 +19,6 @@ int     heap_empty(const t_heap *h)
 
 t_heapnode heap_peek(const t_heap *h)
 {
-	// Returns minimum node without removing
 	return(h->data[0]);
 }
 
