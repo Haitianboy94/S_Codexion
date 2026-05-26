@@ -36,4 +36,11 @@ fclean: clean
 
 re: fclean all
 
-.PHONY: all clean fclean re
+run: $(NAME)
+	-@./$(NAME) 1 800 200 200 200 3 50 fifo
+	-@./$(NAME) 5 800 200 200 200 3 50 fifo
+	-@./$(NAME) 5 800 200 200 200 3 50 edf
+	-@./$(NAME) 5 200 800 200 200 3 50 fifo
+	-@./$(NAME) 2 800 200 200 200 3 50 fifo
+
+.PHONY: all clean fclean re run
