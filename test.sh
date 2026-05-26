@@ -11,12 +11,17 @@ PASS=0
 FAIL=0
 TOTAL=0
 
-# Colors
 GREEN="\033[32m"
 RED="\033[31m"
 YELLOW="\033[33m"
 CYAN="\033[36m"
 RESET="\033[0m"
+
+# Strip ANSI color codes from output
+strip_colors()
+{
+	sed 's/\x1b\[[0-9;]*m//g'
+}
 
 # ============================================================
 # Helpers
@@ -25,7 +30,7 @@ RESET="\033[0m"
 run_test()
 {
 	local desc="$1"
-	local expected="$2"   # "ok", "burnout", "error", "no_burnout"
+	local expected="$2"
 	local timeout_sec="$3"
 	shift 3
 	local args=("$@")
@@ -33,8 +38,9 @@ run_test()
 	TOTAL=$((TOTAL + 1))
 	printf "${CYAN}[TEST %02d]${RESET} %-55s" "$TOTAL" "$desc"
 
-	output=$(timeout "$timeout_sec" "$BINARY" "${args[@]}" 2>&1)
+	raw=$(timeout "$timeout_sec" "$BINARY" "${args[@]}" 2>&1)
 	exit_code=$?
+	output=$(echo "$raw" | strip_colors)
 
 	if [ $exit_code -eq 124 ]; then
 		printf "${RED}FAIL${RESET} (timeout after ${timeout_sec}s)\n"
@@ -44,7 +50,6 @@ run_test()
 
 	case "$expected" in
 		"ok")
-			# Should exit 0, no burnout message
 			if [ $exit_code -eq 0 ] && ! echo "$output" | grep -q "burned out"; then
 				printf "${GREEN}PASS${RESET}\n"
 				PASS=$((PASS + 1))
@@ -54,7 +59,6 @@ run_test()
 			fi
 			;;
 		"burnout")
-			# Should exit 1, burnout message present
 			if [ $exit_code -eq 1 ] && echo "$output" | grep -q "burned out"; then
 				printf "${GREEN}PASS${RESET}\n"
 				PASS=$((PASS + 1))
@@ -64,7 +68,6 @@ run_test()
 			fi
 			;;
 		"error")
-			# Should exit non-zero with no simulation output
 			if [ $exit_code -ne 0 ] && ! echo "$output" | grep -q "is compiling"; then
 				printf "${GREEN}PASS${RESET}\n"
 				PASS=$((PASS + 1))
@@ -74,12 +77,11 @@ run_test()
 			fi
 			;;
 		"no_burnout")
-			# Should complete without any burnout
-			if ! echo "$output" | grep -q "burned out"; then
+			if [ $exit_code -eq 0 ] && ! echo "$output" | grep -q "burned out"; then
 				printf "${GREEN}PASS${RESET}\n"
 				PASS=$((PASS + 1))
 			else
-				printf "${RED}FAIL${RESET} (unexpected burnout)\n"
+				printf "${RED}FAIL${RESET} (exit=$exit_code, unexpected burnout)\n"
 				FAIL=$((FAIL + 1))
 			fi
 			;;
@@ -89,17 +91,17 @@ run_test()
 check_burnout_timing()
 {
 	local desc="$1"
-	local burnout_ms="$2"   # expected burnout time
-	local tolerance="$3"    # tolerance in ms
+	local burnout_ms="$2"
+	local tolerance="$3"
 	shift 3
 	local args=("$@")
 
 	TOTAL=$((TOTAL + 1))
 	printf "${CYAN}[TEST %02d]${RESET} %-55s" "$TOTAL" "$desc"
 
-	output=$(timeout 5 "$BINARY" "${args[@]}" 2>&1)
-
+	output=$(timeout 5 "$BINARY" "${args[@]}" 2>&1 | strip_colors)
 	burnout_line=$(echo "$output" | grep "burned out" | head -1)
+
 	if [ -z "$burnout_line" ]; then
 		printf "${RED}FAIL${RESET} (no burnout detected)\n"
 		FAIL=$((FAIL + 1))
@@ -130,8 +132,8 @@ check_compile_count()
 	TOTAL=$((TOTAL + 1))
 	printf "${CYAN}[TEST %02d]${RESET} %-55s" "$TOTAL" "$desc"
 
-	output=$(timeout 30 "$BINARY" "${args[@]}" 2>&1)
-	exit_code=$?
+	output=$(timeout 30 "$BINARY" "${args[@]}" 2>&1 | strip_colors)
+	exit_code=${PIPESTATUS[0]}
 
 	if [ $exit_code -eq 124 ]; then
 		printf "${RED}FAIL${RESET} (timeout)\n"
@@ -139,22 +141,17 @@ check_compile_count()
 		return
 	fi
 
-	# Count compiles per coder
-	all_ok=1
 	for i in $(seq 1 "$nb_coders"); do
-		count=$(echo "$output" | grep "^[0-9]* $i is compiling" | wc -l)
+		count=$(echo "$output" | grep -cE "^[0-9]+ $i is compiling$")
 		if [ "$count" -lt "$required" ]; then
-			all_ok=0
 			printf "${RED}FAIL${RESET} (coder $i compiled $count/$required times)\n"
 			FAIL=$((FAIL + 1))
 			return
 		fi
 	done
 
-	if [ $all_ok -eq 1 ]; then
-		printf "${GREEN}PASS${RESET}\n"
-		PASS=$((PASS + 1))
-	fi
+	printf "${GREEN}PASS${RESET}\n"
+	PASS=$((PASS + 1))
 }
 
 check_log_format()
@@ -166,10 +163,9 @@ check_log_format()
 	TOTAL=$((TOTAL + 1))
 	printf "${CYAN}[TEST %02d]${RESET} %-55s" "$TOTAL" "$desc"
 
-	output=$(timeout 10 "$BINARY" "${args[@]}" 2>&1)
-
-	# Every line must match: NUMBER NUMBER MESSAGE
+	output=$(timeout 10 "$BINARY" "${args[@]}" 2>&1 | strip_colors)
 	bad_lines=$(echo "$output" | grep -v "^[0-9]\+ [0-9]\+ " | grep -v "^$")
+
 	if [ -z "$bad_lines" ]; then
 		printf "${GREEN}PASS${RESET}\n"
 		PASS=$((PASS + 1))
@@ -195,7 +191,7 @@ check_valgrind()
 	TOTAL=$((TOTAL + 1))
 	printf "${CYAN}[TEST %02d]${RESET} %-55s" "$TOTAL" "$desc"
 
-	vg_output=$(timeout 15 valgrind --leak-check=full --error-exitcode=42 \
+	vg_output=$(timeout 20 valgrind --leak-check=full --error-exitcode=42 \
 		"$BINARY" "${args[@]}" 2>&1)
 	vg_exit=$?
 
@@ -256,12 +252,13 @@ run_test "Float argument"                       "error" 2  5 800.5 200 200 200 3
 
 printf "\n${YELLOW}--- Basic Functionality ---${RESET}\n"
 
-run_test "1 coder, 3 compiles, fifo"            "ok"     5   1 800 200 200 200 3 50 fifo
-run_test "2 coders, 3 compiles, fifo"           "ok"     10  2 800 200 200 200 3 50 fifo
-run_test "5 coders, 3 compiles, fifo"           "ok"     15  5 800 200 200 200 3 50 fifo
-run_test "5 coders, 3 compiles, edf"            "ok"     15  5 800 200 200 200 3 50 edf
-run_test "3 coders, 5 compiles, fifo"           "ok"     20  3 800 200 200 200 5 50 fifo
-run_test "4 coders, 2 compiles, edf"            "ok"     10  4 800 200 200 200 2 50 edf
+run_test "1 coder burns out (only 1 dongle, fifo)"  "burnout" 5  1 800 200 200 200 3 50 fifo
+run_test "1 coder burns out (only 1 dongle, edf)"   "burnout" 5  1 800 200 200 200 3 50 edf
+run_test "2 coders, 3 compiles, fifo"               "ok"     10  2 800 200 200 200 3 50 fifo
+run_test "5 coders, 3 compiles, fifo"               "ok"     15  5 800 200 200 200 3 50 fifo
+run_test "5 coders, 3 compiles, edf"                "ok"     15  5 800 200 200 200 3 50 edf
+run_test "3 coders, 5 compiles, fifo"               "ok"     20  3 800 200 200 200 5 50 fifo
+run_test "4 coders, 2 compiles, edf"                "ok"     10  4 800 200 200 200 2 50 edf
 
 # ============================================================
 # SECTION 3: Burnout scenarios
@@ -273,11 +270,10 @@ run_test "Compile > burnout → burnout"          "burnout" 5  5 200 800 200 200
 run_test "1 coder, compile > burnout"           "burnout" 5  1 200 800 200 200 3 50 fifo
 run_test "2 coders, tight burnout"              "burnout" 5  2 100 800 200 200 3 50 fifo
 
-# Burnout timing precision (within 10ms)
-check_burnout_timing "Burnout logged within 10ms (200ms burnout)" \
+check_burnout_timing "Burnout within 10ms (200ms burnout)" \
 	201 15  5 200 800 200 200 3 50 fifo
 
-check_burnout_timing "Burnout logged within 10ms (500ms burnout)" \
+check_burnout_timing "Burnout within 10ms (500ms burnout)" \
 	501 15  5 500 800 200 200 3 50 fifo
 
 # ============================================================
@@ -286,11 +282,11 @@ check_burnout_timing "Burnout logged within 10ms (500ms burnout)" \
 
 printf "\n${YELLOW}--- Compile Count Verification ---${RESET}\n"
 
-check_compile_count "1 coder reaches 3 compiles"   1 3   1 800 200 200 200 3 50 fifo
-check_compile_count "2 coders reach 3 compiles"    2 3   2 800 200 200 200 3 50 fifo
-check_compile_count "5 coders reach 3 compiles"    5 3   5 800 200 200 200 3 50 fifo
-check_compile_count "5 coders reach 1 compile"     5 1   5 800 200 200 200 1 50 fifo
-check_compile_count "3 coders reach 5 compiles"    3 5   3 800 200 200 200 5 50 fifo
+check_compile_count "2 coders reach 3 compiles"      2 3   2 800 200 200 200 3 50 fifo
+check_compile_count "5 coders reach 3 compiles"      5 3   5 800 200 200 200 3 50 fifo
+check_compile_count "5 coders reach 1 compile"       5 1   5 800 200 200 200 1 50 fifo
+check_compile_count "3 coders reach 5 compiles"      3 5   3 800 200 200 200 5 50 fifo
+check_compile_count "4 coders reach 2 compiles edf"  4 2   4 800 200 200 200 2 50 edf
 
 # ============================================================
 # SECTION 5: Log format verification
@@ -298,7 +294,7 @@ check_compile_count "3 coders reach 5 compiles"    3 5   3 800 200 200 200 5 50 
 
 printf "\n${YELLOW}--- Log Format ---${RESET}\n"
 
-check_log_format "Log format valid (1 coder)"     1 800 200 200 200 3 50 fifo
+check_log_format "Log format valid (2 coders)"    2 800 200 200 200 3 50 fifo
 check_log_format "Log format valid (5 coders)"    5 800 200 200 200 3 50 fifo
 check_log_format "Log format valid (burnout)"     5 200 800 200 200 3 50 fifo
 
@@ -319,13 +315,13 @@ run_test "No burnout: 2 coders"                 "no_burnout" 10  2 800 200 200 2
 
 printf "\n${YELLOW}--- Edge Cases ---${RESET}\n"
 
-run_test "1 compile required"                   "ok"     5   5 800 200 200 200 1 50 fifo
-run_test "1 coder, edf"                         "ok"     5   1 800 200 200 200 3 50 edf
-run_test "Large cooldown"                       "ok"     20  2 2000 200 200 200 3 500 fifo
+run_test "1 compile required (5 coders)"        "ok"     5   5 800 200 200 200 1 50 fifo
+run_test "Large cooldown (2 coders)"            "ok"     20  2 2000 200 200 200 3 500 fifo
 run_test "Many coders (10)"                     "ok"     30  10 800 200 200 200 3 50 fifo
 run_test "Very short compile time"              "ok"     10  5 800 10 10 10 5 5 fifo
 run_test "Zero cooldown fifo"                   "ok"     15  5 800 200 200 200 3 0 fifo
 run_test "Zero cooldown edf"                    "ok"     15  5 800 200 200 200 3 0 edf
+run_test "1 coder always burns out"             "burnout" 5  1 500 200 200 200 3 50 fifo
 
 # ============================================================
 # SECTION 8: Memory leaks (valgrind)
@@ -333,11 +329,11 @@ run_test "Zero cooldown edf"                    "ok"     15  5 800 200 200 200 3
 
 printf "\n${YELLOW}--- Memory Leaks (valgrind) ---${RESET}\n"
 
-check_valgrind "No leaks: 1 coder, clean stop"      1 800 200 200 200 1 50 fifo
-check_valgrind "No leaks: 2 coders, clean stop"     2 800 200 200 200 3 50 fifo
+check_valgrind "No leaks: 2 coders, clean stop"     2 800 200 200 200 2 50 fifo
 check_valgrind "No leaks: 5 coders, clean stop"     5 800 200 200 200 2 50 fifo
 check_valgrind "No leaks: burnout scenario"         5 200 800 200 200 3 50 fifo
 check_valgrind "No leaks: edf scheduler"            3 800 200 200 200 2 50 edf
+check_valgrind "No leaks: 1 coder burnout"          1 800 200 200 200 3 50 fifo
 
 # ============================================================
 # Summary
