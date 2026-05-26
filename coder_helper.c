@@ -6,7 +6,7 @@
 /*   By: rulouis <rulouis@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/19 13:20:03 by rulouis           #+#    #+#             */
-/*   Updated: 2026/05/19 13:24:14 by rulouis          ###   ########.fr       */
+/*   Updated: 2026/05/26 12:20:15 by rulouis          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,11 +24,6 @@ int	coder_right_dongle_id(const t_coder *c)
 
 void	dongle_put_ordered(t_coder *c, int left, int right)
 {
-	if (c->sim->args.nb_coders == 1)
-	{
-		dongle_put(&c->sim->dongles[left], c);
-		return ;
-	}
 	if (c->id % 2 == 0)
 	{
 		dongle_put(&c->sim->dongles[left], c);
@@ -54,27 +49,27 @@ int	take_dongles(t_coder *c, int left, int right)
 {
 	if (c->id % 2 == 0)
 	{
-		dongle_take(&c->sim->dongles[right], c, sched_priority(c->sim, c->id));
+		dongle_take(&c->sim->dongles[right], c,
+			sched_priority(c->sim, c->id));
 		if (c->sim->stop_flag)
 		{
 			dongle_put(&c->sim->dongles[right], c);
 			return (0);
 		}
-		if (c->sim->args.nb_coders > 1)
-			dongle_take(&c->sim->dongles[left], c,
-				sched_priority(c->sim, c->id));
+		dongle_take(&c->sim->dongles[left], c,
+			sched_priority(c->sim, c->id));
 	}
 	else
 	{
-		dongle_take(&c->sim->dongles[left], c, sched_priority(c->sim, c->id));
+		dongle_take(&c->sim->dongles[left], c,
+			sched_priority(c->sim, c->id));
 		if (c->sim->stop_flag)
 		{
 			dongle_put(&c->sim->dongles[left], c);
 			return (0);
 		}
-		if (c->sim->args.nb_coders > 1)
-			dongle_take(&c->sim->dongles[right], c,
-				sched_priority(c->sim, c->id));
+		dongle_take(&c->sim->dongles[right], c,
+			sched_priority(c->sim, c->id));
 	}
 	return (!c->sim->stop_flag);
 }

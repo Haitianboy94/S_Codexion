@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   logger.c                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: ruthler <ruthler@student.42.fr>            +#+  +:+       +#+        */
+/*   By: rulouis <rulouis@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/05 09:36:11 by rulouis           #+#    #+#             */
-/*   Updated: 2026/05/25 14:34:18 by ruthler          ###   ########.fr       */
+/*   Updated: 2026/05/26 12:43:32 by rulouis          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -44,7 +44,6 @@ void	log_event(t_sim *sim, int coder_id, const char *msg)
 	free(str_id);
 	pthread_mutex_unlock(&sim->log_mutex);
 }
-
 
 struct timespec	next_timeout(void)
 {

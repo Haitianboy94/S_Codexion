@@ -6,7 +6,7 @@
 /*   By: rulouis <rulouis@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/05 09:36:02 by rulouis           #+#    #+#             */
-/*   Updated: 2026/05/19 00:00:00 by rulouis          ###   ########.fr       */
+/*   Updated: 2026/05/26 11:48:33 by rulouis          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,7 +27,7 @@ static int	coder_compile(t_coder *c, int left, int right)
 	dongle_put_ordered(c, left, right);
 	return (!c->sim->stop_flag);
 }
- 
+
 static int	coder_debug_refactor(t_coder *c)
 {
 	log_event(c->sim, c->id, "is debugging");
@@ -41,13 +41,13 @@ static int	coder_debug_refactor(t_coder *c)
 	interruptible_sleep(c, c->sim->args.time_to_refactor);
 	return (!c->sim->stop_flag);
 }
- 
+
 void	*coder_routine(void *arg)
 {
 	t_coder	*c;
 	int		left;
 	int		right;
- 
+
 	c = (t_coder *)arg;
 	left = coder_left_dongle_id(c);
 	right = coder_right_dongle_id(c);

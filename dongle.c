@@ -6,7 +6,7 @@
 /*   By: rulouis <rulouis@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/05 09:36:02 by rulouis           #+#    #+#             */
-/*   Updated: 2026/05/19 00:00:00 by rulouis          ###   ########.fr       */
+/*   Updated: 2026/05/26 12:21:09 by rulouis          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,6 +39,7 @@ void	dongle_destroy(t_dongle *d)
 	pthread_cond_destroy(&d->cond);
 	pthread_mutex_destroy(&d->mutex);
 }
+
 static int	should_wait(t_dongle *d, t_coder *coder)
 {
 	return (d->held_by != -1

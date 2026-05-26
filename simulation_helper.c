@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   simulation_helper.c                                :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: ruthler <ruthler@student.42.fr>            +#+  +:+       +#+        */
+/*   By: rulouis <rulouis@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/25 14:23:33 by ruthler           #+#    #+#             */
-/*   Updated: 2026/05/25 14:26:08 by ruthler          ###   ########.fr       */
+/*   Updated: 2026/05/26 12:47:26 by rulouis          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -51,25 +51,27 @@ static int	any_burned_out(t_sim *sim)
 int	sim_run(t_sim *sim)
 {
 	if (pthread_create(&sim->monitor,
-        NULL, monitor_routine, sim) != 0)
+			NULL, monitor_routine, sim) != 0)
 		return (-1);
 	launch_coders(sim);
 	join_all(sim);
-	return (any_burned_out(sim) ? -1 : 0);
+	if (any_burned_out(sim))
+		return (-1);
+	return (0);
 }
 
-void    sim_destroy(t_sim *sim)
+void	sim_destroy(t_sim *sim)
 {
-    int i;
+	int	i;
 
-    i = 0;
-    while (i < sim -> args.nb_coders)
-    {
-        dongle_destroy(&sim -> dongles[i]);
-        i++;
-    }
-    free(sim -> dongles);
-    free(sim -> coders);
-    pthread_mutex_destroy(&sim->log_mutex);
-    pthread_mutex_destroy(&sim->state_mutex);
+	i = 0;
+	while (i < sim -> args.nb_coders)
+	{
+		dongle_destroy(&sim -> dongles[i]);
+		i++;
+	}
+	free(sim -> dongles);
+	free(sim -> coders);
+	pthread_mutex_destroy(&sim->log_mutex);
+	pthread_mutex_destroy(&sim->state_mutex);
 }

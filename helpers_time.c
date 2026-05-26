@@ -6,40 +6,37 @@
 /*   By: rulouis <rulouis@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/05 09:36:08 by rulouis           #+#    #+#             */
-/*   Updated: 2026/05/18 17:05:41 by rulouis          ###   ########.fr       */
+/*   Updated: 2026/05/26 12:43:08 by rulouis          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "codexion.h"
 
-long    now_ms(void)
+long	now_ms(void)
 {
-	struct timeval tv;
-	
+	struct timeval	tv;
+
 	gettimeofday(&tv, NULL);
 	return (tv.tv_sec * 1000 + tv.tv_usec / 1000);
 }
-    
 
-long    elapsed_ms(long since_ms)
+long	elapsed_ms(long since_ms)
 {
 	return (now_ms() - since_ms);
 }
 
-void    sleep_ms(long ms)
+void	sleep_ms(long ms)
 {
-	long start;
+	long	start;
 
-    if (ms <= 0)
-        return;
-    start = now_ms();
-    while (now_ms() - start < ms)
-    {
-		
-	}
+	if (ms <= 0)
+		return ;
+	start = now_ms();
+	while (now_ms() - start < ms)
+		;
 }
 
-static	int	lenn(int n)
+static int	lenn(int n)
 {
 	int	size;
 
