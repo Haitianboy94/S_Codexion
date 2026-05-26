@@ -6,45 +6,45 @@
 /*   By: rulouis <rulouis@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/04 15:35:46 by rulouis           #+#    #+#             */
-/*   Updated: 2026/05/19 13:00:40 by rulouis          ###   ########.fr       */
+/*   Updated: 2026/05/26 10:22:47 by rulouis          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "codexion.h"
 
-static int check_arg(char *argv);
+static	int	check_arg(char *argv);
 
-static int  fill_args(char **argv, t_args *out)
+static	int	fill_args(char **argv, t_args *out)
 {
     if(!check_arg(argv[1]) || !check_arg(argv[2])
 		|| !check_arg(argv[3]) || !check_arg(argv[4])
 		|| !check_arg(argv[5]) || !check_arg(argv[6])
         || !check_arg(argv[7])
 	)
-        return (write(2, "Invalid Argument\n", 17), -1);
-    out->nb_coders = atoi(argv[1]);
-    out->time_to_burnout = ft_atol(argv[2]);
-    out->time_to_compile = ft_atol(argv[3]);
-    out->time_to_debug = ft_atol(argv[4]);
-    out->time_to_refactor = ft_atol(argv[5]);
-    out->nb_compiles_required = atoi(argv[6]);
-    out->dongle_cooldown = ft_atol(argv[7]);
-    return (0);
+		return (write(2, "Invalid Argument\n", 17), -1);
+	out->nb_coders = atoi(argv[1]);
+	out->time_to_burnout = ft_atol(argv[2]);
+	out->time_to_compile = ft_atol(argv[3]);
+	out->time_to_debug = ft_atol(argv[4]);
+	out->time_to_refactor = ft_atol(argv[5]);
+	out->nb_compiles_required = atoi(argv[6]);
+	out->dongle_cooldown = ft_atol(argv[7]);
+	return(0);
 }
 
-int parse_args(int argc, char **argv, t_args *out)
+int	parse_args(int argc, char **argv, t_args *out)
 {
-    if (argc != 9)
-        return (write(2, RED "Argument Missing\033" RESET, 25), -1);
-    if (fill_args(argv, out) == -1)
-        return (-1);
-    if (strcmp(argv[8], "fifo") == 0)
-        out->scheduler = FIFO;
-    else if (strcmp(argv[8], "edf") == 0)
-        out->scheduler = EDF;
-    else
-        return (write(2, RED "Choose between 'fifo' or 'edf'\n" RESET, 39), -1);
-    return (0);
+	if (argc != 9)
+		return (write(2, RED "Argument Missing\033" RESET, 25), -1);
+	if (fill_args(argv, out) == -1)
+		return (-1);
+	if (strcmp(argv[8], "fifo") == 0)
+		out->scheduler = FIFO;
+	else if (strcmp(argv[8], "edf") == 0)
+		out->scheduler = EDF;
+	else
+		return (write(2, RED "Choose between 'fifo' or 'edf'\n" RESET, 39), -1);
+	return (0);
 }
 	
 static int check_arg(char *argv)
