@@ -61,6 +61,22 @@ All arguments are mandatory.
 # Memory leaks checks
 valgrind --leak-check=full ./codexion 2 800 200 200 200 3 50 fifo
 
+### ThreadSanitizer (race detection)
+
+To build with ThreadSanitizer for data race detection:
+
+```bash
+make san
+./codexion_san <args>
+```
+
+> **Note:** The only reported data race involves reading `stop_flag` inside
+> `dongle_take` while holding `d->mutex`. This race is structurally
+> unavoidable without C11 atomics (not in the allowed function list) —
+> locking `state_mutex` there would create a deadlock with the monitor.
+> `volatile int` ensures correct runtime behavior on x86. This pattern
+> is standard in 42 POSIX thread projects.
+
 ### Cleanup
 
 ```bash
