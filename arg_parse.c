@@ -6,7 +6,7 @@
 /*   By: rulouis <rulouis@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/04 15:35:46 by rulouis           #+#    #+#             */
-/*   Updated: 2026/05/26 11:40:59 by rulouis          ###   ########.fr       */
+/*   Updated: 2026/06/01 16:25:45 by rulouis          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -79,4 +79,14 @@ int	validate_args(const t_args *a)
 		return (write(2, RED "dongle_cooldown can't be negative\n"
 				RESET, 42), -1);
 	return (0);
+}
+
+int	sim_is_stopped(t_sim *sim)
+{
+	int	stopped;
+
+	pthread_mutex_lock(&sim->state_mutex);
+	stopped = sim->stop_flag;
+	pthread_mutex_unlock(&sim->state_mutex);
+	return (stopped);
 }

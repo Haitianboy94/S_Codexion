@@ -6,7 +6,7 @@
 /*   By: rulouis <rulouis@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/04 12:27:53 by rulouis           #+#    #+#             */
-/*   Updated: 2026/05/26 12:17:43 by rulouis          ###   ########.fr       */
+/*   Updated: 2026/06/01 16:24:17 by rulouis          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -99,7 +99,7 @@ typedef struct s_sim
 	pthread_t		monitor;
 	pthread_mutex_t	log_mutex;
 	pthread_mutex_t	state_mutex;
-	int				stop_flag;
+	volatile int	stop_flag;
 	long			start_ms;
 }	t_sim;
 
@@ -115,6 +115,9 @@ void			heap_free(t_heap *h);
 int				heap_push(t_heap *h, t_heapnode node);
 t_heapnode		heap_pop(t_heap *h);
 t_heapnode		heap_peek(const t_heap *h);
+int				heap_empty(const t_heap *h);
+void			heap_sift_up(t_heap *h, int i);
+void			heap_sift_down(t_heap *h, int i);
 long			now_ms(void);
 long			elapsed_ms(long since_ms);
 void			sleep_ms(long ms);
@@ -130,16 +133,15 @@ int				sim_run(t_sim *sim);
 void			sim_destroy(t_sim *sim);
 long			ft_atol(char *str);
 char			*ft_itoa(int n);
-void			heap_sift_up(t_heap *h, int i);
-void			heap_sift_down(t_heap *h, int i);
-int				heap_empty(const t_heap *h);
-t_heapnode		heap_peek(const t_heap *h);
 char			*ft_strdup(char *s);
+int				sim_is_stopped(t_sim *sim);
 int				coder_left_dongle_id(const t_coder *c);
 int				coder_right_dongle_id(const t_coder *c);
 void			dongle_put_ordered(t_coder *c, int left, int right);
 void			interruptible_sleep(t_coder *c, long ms);
 int				take_dongles(t_coder *c, int left, int right);
 struct timespec	next_timeout(void);
+int				dongle_ready(t_dongle *d, t_coder *coder);
+void			dongle_cleanup(t_dongle *d);
 
 #endif

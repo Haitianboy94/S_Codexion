@@ -6,7 +6,7 @@
 /*   By: rulouis <rulouis@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/05 09:36:11 by rulouis           #+#    #+#             */
-/*   Updated: 2026/05/26 12:43:32 by rulouis          ###   ########.fr       */
+/*   Updated: 2026/06/01 16:41:37 by rulouis          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,7 +28,7 @@ void	log_event(t_sim *sim, int coder_id, const char *msg)
 	char	*str_time;
 	char	*str_id;
 
-	if (sim->stop_flag && strcmp(msg, "burned out") != 0)
+	if (sim_is_stopped(sim) && strcmp(msg, BURNED "burned out" RESET) != 0)
 		return ;
 	pthread_mutex_lock(&sim->log_mutex);
 	timestamp = now_ms() - sim->start_ms;

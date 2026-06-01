@@ -6,7 +6,7 @@
 /*   By: rulouis <rulouis@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/05 09:36:14 by rulouis           #+#    #+#             */
-/*   Updated: 2026/05/19 00:00:00 by rulouis          ###   ########.fr       */
+/*   Updated: 2026/06/01 16:40:27 by rulouis          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -51,7 +51,9 @@ static int	check_burnout(t_sim *sim)
 		{
 			sim->coders[i].state = BURNED_OUT;
 			sim->stop_flag = 1;
-			log_event(sim, sim->coders[i].id, "burned out");
+			pthread_mutex_unlock(&sim->state_mutex);
+			log_event(sim, sim->coders[i].id, BURNED "burned out" RESET);
+			broadcast_all(sim);
 			return (1);
 		}
 		i++;
@@ -59,21 +61,23 @@ static int	check_burnout(t_sim *sim)
 	return (0);
 }
 
-static int	check_all_done(t_sim *sim)
-{
-	return (sim->args.nb_compiles_required > 0 && all_done(sim));
-}
-
 void	*monitor_routine(void *arg)
 {
 	t_sim	*sim;
 
 	sim = (t_sim *)arg;
-	while (1)
+	while (!sim_is_stopped(sim))
 	{
 		sleep_ms(1);
 		pthread_mutex_lock(&sim->state_mutex);
-		if (sim->stop_flag || check_burnout(sim) || check_all_done(sim))
+		if (sim->stop_flag)
+		{
+			pthread_mutex_unlock(&sim->state_mutex);
+			break ;
+		}
+		if (check_burnout(sim))
+			return (NULL);
+		if (sim->args.nb_compiles_required > 0 && all_done(sim))
 		{
 			sim->stop_flag = 1;
 			pthread_mutex_unlock(&sim->state_mutex);

@@ -6,7 +6,7 @@
 /*   By: rulouis <rulouis@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/05 09:36:02 by rulouis           #+#    #+#             */
-/*   Updated: 2026/05/26 12:21:09 by rulouis          ###   ########.fr       */
+/*   Updated: 2026/06/01 16:34:35 by rulouis          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,35 +40,37 @@ void	dongle_destroy(t_dongle *d)
 	pthread_mutex_destroy(&d->mutex);
 }
 
-static int	should_wait(t_dongle *d, t_coder *coder)
-{
-	return (d->held_by != -1
-		|| now_ms() < d->available_at_ms
-		|| heap_peek(&d->queue).coder_id != coder->id);
-}
-
-void	dongle_take(t_dongle *d, t_coder *coder, long priority)
+static int	dongle_try_acquire(t_dongle *d, t_coder *coder)
 {
 	struct timespec	ts;
 
 	pthread_mutex_lock(&d->mutex);
-	heap_push(&d->queue, (t_heapnode){coder->id, priority});
-	while (should_wait(d, coder))
+	if (dongle_ready(d, coder))
 	{
-		if (coder->sim->stop_flag)
-		{
-			if (d->queue.size > 0)
-				heap_pop(&d->queue);
-			pthread_mutex_unlock(&d->mutex);
-			return ;
-		}
-		ts = next_timeout();
-		pthread_cond_timedwait(&d->cond, &d->mutex, &ts);
+		d->held_by = coder->id;
+		sched_next(d);
+		pthread_mutex_unlock(&d->mutex);
+		log_event(coder->sim, coder->id, YELLOW "has taken a dongle" RESET);
+		return (1);
 	}
-	d->held_by = coder->id;
-	sched_next(d);
+	ts = next_timeout();
+	pthread_cond_timedwait(&d->cond, &d->mutex, &ts);
 	pthread_mutex_unlock(&d->mutex);
-	log_event(coder->sim, coder->id, "has taken a dongle");
+	return (0);
+}
+
+void	dongle_take(t_dongle *d, t_coder *coder, long priority)
+{
+	pthread_mutex_lock(&d->mutex);
+	heap_push(&d->queue, (t_heapnode){coder->id, priority});
+	pthread_mutex_unlock(&d->mutex);
+	while (1)
+	{
+		if (sim_is_stopped(coder->sim))
+			return (dongle_cleanup(d));
+		if (dongle_try_acquire(d, coder))
+			return ;
+	}
 }
 
 void	dongle_put(t_dongle *d, t_coder *coder)

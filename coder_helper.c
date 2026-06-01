@@ -6,7 +6,7 @@
 /*   By: rulouis <rulouis@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/19 13:20:03 by rulouis           #+#    #+#             */
-/*   Updated: 2026/05/26 12:20:15 by rulouis          ###   ########.fr       */
+/*   Updated: 2026/06/01 16:26:09 by rulouis          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,7 +41,7 @@ void	interruptible_sleep(t_coder *c, long ms)
 	long	end;
 
 	end = now_ms() + ms;
-	while (now_ms() < end && !c->sim->stop_flag)
+	while (now_ms() < end && !sim_is_stopped(c->sim))
 		sleep_ms(1);
 }
 
@@ -51,7 +51,7 @@ int	take_dongles(t_coder *c, int left, int right)
 	{
 		dongle_take(&c->sim->dongles[right], c,
 			sched_priority(c->sim, c->id));
-		if (c->sim->stop_flag)
+		if (sim_is_stopped(c->sim))
 		{
 			dongle_put(&c->sim->dongles[right], c);
 			return (0);
@@ -63,7 +63,7 @@ int	take_dongles(t_coder *c, int left, int right)
 	{
 		dongle_take(&c->sim->dongles[left], c,
 			sched_priority(c->sim, c->id));
-		if (c->sim->stop_flag)
+		if (sim_is_stopped(c->sim))
 		{
 			dongle_put(&c->sim->dongles[left], c);
 			return (0);
@@ -71,5 +71,5 @@ int	take_dongles(t_coder *c, int left, int right)
 		dongle_take(&c->sim->dongles[right], c,
 			sched_priority(c->sim, c->id));
 	}
-	return (!c->sim->stop_flag);
+	return (!sim_is_stopped(c->sim));
 }
